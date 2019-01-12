@@ -1,0 +1,26 @@
+NAME			= test.tos
+CC				= ./test ./abin/pcc.ttp
+LD              = ./test ./abin/plink.ttp
+CFLAGS  		= 
+DEFINES			= 
+
+INCLUDES		= -I. 
+LIBS			=
+LDFLAGS   		= 
+
+OBJECTS			= ./test.o
+
+# Build all
+all:		$(NAME)
+
+# Generate target
+$(NAME):	$(OBJECTS)
+		$(LD) $(LDFLAGS) $(OBJECTS) $(LIBS) -O=$@
+
+# Generic compilation target
+.c.o:
+		$(CC) $(CFLAGS) $(INCLUDES) $(DEFINES) $<
+
+# Remove all build files
+clean:
+		rm -f $(OBJECTS)
