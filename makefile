@@ -1,7 +1,9 @@
 NAME			= test
 CC				= gcc
+AS              = gcc
 CFLAGS  		= -Wall -pedantic -std=gnu99 -O3 -DTLSF_STATISTIC
-DEFINES			= -D__UNIX__ 
+#DEFINES			= -DTOS_BINARY="\"./abin/PCC.TTP\"" -D__UNIX__ 
+DEFINES			= -UTOS_BINARY -D__UNIX__ 
 
 INCLUDES		= -I. -I./mushashi -I./TLSF-2.4.6/src
 LIBS			=
@@ -21,6 +23,8 @@ OBJECTS			= ./main.o \
 
 OBJECTS			+= ./TLSF-2.4.6/src/tlsf.o
 
+OBJECTS			+= ./binary.o
+
 
 # Build all
 all:		$(NAME)
@@ -32,6 +36,9 @@ $(NAME):	$(OBJECTS)
 
 # Generic compilation target
 .c.o:
+		$(CC) -c $(CFLAGS) $(INCLUDES) $(DEFINES) $< -o $@
+
+.S.o:
 		$(CC) -c $(CFLAGS) $(INCLUDES) $(DEFINES) $< -o $@
 
 # Remove all build files

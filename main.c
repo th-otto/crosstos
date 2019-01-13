@@ -1,13 +1,21 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
-
 #include "cpu.h"
+
+#if defined(TOS_BINARY)
+extern uint8_t binary[];
+#define FIRST_PARAM (1)
+#else
+#define FIRST_PARAM (2)
+#endif
 
 int main( int argc, char* args[] )
 {
-    uint8_t* binary = NULL;
     bool done = false;
+
+#if !defined(TOS_BINARY)
+     uint8_t* binary = NULL;
 
     if(argc > 1)
     {
@@ -39,14 +47,15 @@ int main( int argc, char* args[] )
             fclose(fd);
         }
     }
- 
+#endif
+
     if(binary)
     {
         char cmd[255] = "";
 
         int arg;
 
-        for(arg = 2; arg < argc; arg++)
+        for(arg = FIRST_PARAM; arg < argc; arg++)
         {
             strlcat(cmd, args[arg], sizeof(cmd));
             strlcat(cmd, " ", sizeof(cmd));
