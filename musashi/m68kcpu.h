@@ -1736,18 +1736,8 @@ INLINE void m68ki_exception_trapN(uint vector)
 	uint sr = m68ki_init_exception();
 	m68ki_stack_frame_0000(REG_PC, sr, vector);
 	m68ki_jump_vector(vector);
-
 #else
-
-	uint32 newpc;
-
-	if(cpu_callback_trap(vector, &newpc))
-	{
-		m68ki_push_32(REG_PC);
-
-		REG_PC = newpc;
-	}
-	
+	cpu_callback_trap(vector);
 #endif
 	/* Use up some clock cycles */
 	USE_CYCLES(CYC_EXCEPTION[vector]);

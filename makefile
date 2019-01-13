@@ -7,7 +7,11 @@ INCLUDES		= -I. -I./mushashi -I./TLSF-2.4.6/src
 LIBS			=
 LDFLAGS   		= 
 
-OBJECTS			= ./main.o ./cpu.o  	\
+OBJECTS			= ./main.o \
+				  ./cpu.o  	\
+				  ./gemdos.o  	\
+				  ./bios.o  	\
+				  ./xbios.o  	\
 				  ./musashi/m68kcpu.o 	\
 				  ./musashi/m68kops.o 	\
 				  ./musashi/m68kopac.o 	\

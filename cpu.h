@@ -30,7 +30,7 @@ extern void cpu_write_byte(unsigned int address, unsigned int value);
 extern void cpu_write_word(unsigned int address, unsigned int value);
 extern void cpu_write_long(unsigned int address, unsigned int value);
 
-extern bool cpu_callback_trap(uint32_t vector, uint32_t* newpc);
+extern void cpu_callback_trap(uint32_t vector);
 extern void cpu_callback_instruction(void);
 extern void cpu_callback_pc_changed(uint32_t pc);
 
