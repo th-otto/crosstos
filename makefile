@@ -1,46 +1,47 @@
-NAME			= test
-CC				= gcc
-AS              = gcc
-CFLAGS  		= -Wall -pedantic -std=gnu99 -O3 -DTLSF_STATISTIC
-#DEFINES			= -DTOS_BINARY="\"./abin/PCC.TTP\"" -D__UNIX__ 
-DEFINES			= -UTOS_BINARY -D__UNIX__ 
+PREFIX      = 	m68k-atari-tos
 
-INCLUDES		= -I. -I./mushashi -I./TLSF-2.4.6/src
-LIBS			=
-LDFLAGS   		= 
+PUREC   	 = 	./dist/purec/$(PREFIX)-purec-pcc \
+				./dist/purec/$(PREFIX)-purec-cpp \
+				./dist/purec/$(PREFIX)-purec-pasm \
+				./dist/purec/$(PREFIX)-purec-bgiobj \
+				./dist/purec/$(PREFIX)-purec-dispobj \
+				./dist/purec/$(PREFIX)-purec-hc \
+				./dist/purec/$(PREFIX)-purec-plink
 
-OBJECTS			= ./main.o \
-				  ./cpu.o  	\
-				  ./gemdos.o  	\
-				  ./bios.o  	\
-				  ./xbios.o  	\
-				  ./musashi/m68kcpu.o 	\
-				  ./musashi/m68kops.o 	\
-				  ./musashi/m68kopac.o 	\
-				  ./musashi/m68kopnz.o 	\
-				  ./musashi/m68kopdm.o 	\
-				  ./musashi/m68kdasm.o
+DEVPAC   	 = 	./dist/devpac/$(PREFIX)-devpac-clink \
+				./dist/devpac/$(PREFIX)-devpac-gen \
+				./dist/devpac/$(PREFIX)-devpac-crsplit \
+				./dist/devpac/$(PREFIX)-devpac-strip 
 
-OBJECTS			+= ./TLSF-2.4.6/src/tlsf.o
-
-OBJECTS			+= ./binary.o
+all:		$(PUREC) $(DEVPAC)
 
 
-# Build all
-all:		$(NAME)
+./dist/purec/$(PREFIX)-purec-pcc:
+			make -f makefile.single TOS_BINARY="./abin/purec/PCC.TTP" NAME=$@
+./dist/purec/$(PREFIX)-purec-cpp:
+			make -f makefile.single TOS_BINARY="./abin/purec/CPP.TTP" NAME=$@
+./dist/purec/$(PREFIX)-purec-pasm:
+			make -f makefile.single TOS_BINARY="./abin/purec/PASM.TTP" NAME=$@
+./dist/purec/$(PREFIX)-purec-bgiobj:
+			make -f makefile.single TOS_BINARY="./abin/purec/BGIOBJ.TTP" NAME=$@
+./dist/purec/$(PREFIX)-purec-dispobj:
+			make -f makefile.single TOS_BINARY="./abin/purec/DISPOBJ.TTP" NAME=$@
+./dist/purec/$(PREFIX)-purec-hc:
+			make -f makefile.single TOS_BINARY="./abin/purec/HC.TTP" NAME=$@
+./dist/purec/$(PREFIX)-purec-plink:
+			make -f makefile.single TOS_BINARY="./abin/purec/PLINK.TTP" NAME=$@
 
-# Generate target
-$(NAME):	$(OBJECTS)
-		$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
-		strip $(NAME)
 
-# Generic compilation target
-.c.o:
-		$(CC) -c $(CFLAGS) $(INCLUDES) $(DEFINES) $< -o $@
-
-.S.o:
-		$(CC) -c $(CFLAGS) $(INCLUDES) $(DEFINES) $< -o $@
+./dist/devpac/$(PREFIX)-devpac-clink:
+			make -f makefile.single TOS_BINARY="./abin/devpac/bin/clink.ttp" NAME=$@
+./dist/devpac/$(PREFIX)-devpac-gen:
+			make -f makefile.single TOS_BINARY="./abin/devpac/bin/gen.ttp" NAME=$@
+./dist/devpac/$(PREFIX)-devpac-crsplit:
+			make -f makefile.single TOS_BINARY="./abin/devpac/bin/crsplit.ttp" NAME=$@
+./dist/devpac/$(PREFIX)-devpac-strip:
+			make -f makefile.single TOS_BINARY="./abin/devpac/bin/strip.ttp" NAME=$@
 
 # Remove all build files
 clean:
-		rm -f $(OBJECTS)
+		rm -f $(PUREC) $(DEVPAC)
+		make -f makefile.single clean

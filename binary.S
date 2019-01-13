@@ -1,10 +1,10 @@
-#if defined(TOS_BINARY)
+#if defined(BINARY)
 
     .globl _binary
 
 _binary:
 
-    .incbin TOS_BINARY
+    .incbin BINARY
     
 #endif
     .end

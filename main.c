@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "cpu.h"
 
-#if defined(TOS_BINARY)
+#if defined(BINARY)
 extern uint8_t binary[];
 #define FIRST_PARAM (1)
 #else
@@ -14,7 +14,7 @@ int main( int argc, char* args[] )
 {
     bool done = false;
 
-#if !defined(TOS_BINARY)
+#if !defined(BINARY)
      uint8_t* binary = NULL;
 
     if(argc > 1)
