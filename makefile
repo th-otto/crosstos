@@ -37,7 +37,7 @@ all:		$(PUREC) $(DEVPAC)
 ./dist/devpac/$(PREFIX)-devpac-gen:
 			make -f makefile.single TOS_BINARY="./abin/devpac/bin/gen.ttp" NAME=$@
 ./dist/devpac/$(PREFIX)-devpac-crsplit:
-			make -f makefile.single TOS_BINARY="./abin/devpac/bin/crsplit.ttp" NAME=$@
+			make -f makefile.single TOS_BINARY="./abin/devpac/bin/srsplit.ttp" NAME=$@
 ./dist/devpac/$(PREFIX)-devpac-strip:
 			make -f makefile.single TOS_BINARY="./abin/devpac/bin/strip.ttp" NAME=$@
 
