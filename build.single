@@ -28,6 +28,7 @@ all:		$(NAME)
 $(NAME):	$(OBJECTS)
 		$(LD) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
 		$(STRIP) $(NAME)
+		rm -f $(BINARY)
 
 # Generic compilation target
 .c.o:
