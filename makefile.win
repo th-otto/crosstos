@@ -2,7 +2,7 @@ export CC			= x86_64-w64-mingw32-gcc
 export AS           = x86_64-w64-mingw32-gas
 export LD			= x86_64-w64-mingw32-gcc
 export STRIP        = x86_64-w64-mingw32-strip
-export CFLAGS  		= -Wall -pedantic -std=gnu99 -O3 -DTLSF_STATISTIC
+export CFLAGS  		= -Wall -pedantic -std=gnu99 -O3
 export LIBS         = -lws2_32 -lmingw32 -mwindows
 export LDFLAGS   	= 
 

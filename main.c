@@ -6,19 +6,25 @@
 #include "binary.h"
 #include "cpu.h"
 
-int main( int argc, char* args[] )
+int main(int argc, char **argv, char **envp)
 {
     bool done = false;
 
-    uint8_t cmd[255] = "";
-
+    uint8_t cmd[126] = "";
+/*
+    for (char **env = envp; *env != 0; env++)
+    {
+        char *thisEnv = *env;
+        printf("%s\n", thisEnv);    
+    }
+*/
     int arg;
 
     int i = 0;
 
     for(arg = 1; arg < argc; arg++)
     {
-        char* aptr = args[arg];
+        char* aptr = argv[arg];
 
         while(*aptr && i < (sizeof(cmd) - 1))
         {
@@ -37,7 +43,9 @@ int main( int argc, char* args[] )
 
     cmd[i] = '\0';
 
-    if(cpu_load(binary, 500000, cmd))
+    uint32_t sys_pd = cpu_init(argc, argv, envp);
+
+    if(cpu_load(binary, 500000, cmd, sys_pd))
     {
         do
         {

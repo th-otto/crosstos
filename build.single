@@ -1,6 +1,6 @@
 DEFINES			= -DBINARY=\"$(TOS_BINARY)\"
 
-INCLUDES		= -I. -I./mushashi -I./tinyalloc -I./TLSF-2.4.6/src
+INCLUDES		= -I. -I./mushashi -I./tinyalloc
 
 BINARY          = ./binary.o
 

@@ -14,13 +14,18 @@
 #include "gemdos.h"
 
 #include <time.h>
-#include <sys/time.h>
 
 static uint8_t ram[1024*1024*16];
 static uint32_t pd;
+#if defined(_MSC_VER) || defined(WIN32)
+#include <windows.h>
+LARGE_INTEGER performancecounter_frequency;
+#endif
 
-bool cpu_load(uint8_t* bin, uint32_t tpasize, uint8_t* p_cmdlin)
+uint32_t cpu_init(int argc, char **argv, char **envp)
 {
+    pd = 0x00008000; /* System basepage */
+
     m68k_init();
     m68k_set_cpu_type(M68K_CPU_TYPE_68000);
     m68k_pulse_reset();
@@ -29,6 +34,63 @@ bool cpu_load(uint8_t* bin, uint32_t tpasize, uint8_t* p_cmdlin)
     bios_init(ram, sizeof(ram));
     gemdos_init(ram, sizeof(ram));
 
+#if defined(_MSC_VER) || defined(WIN32)
+    QueryPerformanceFrequency(&performancecounter_frequency);
+#endif
+
+    uint32_t p_lowtpa  = pd;                    /* Start address of the TPA            */
+    uint32_t p_hitpa   = p_lowtpa + 256;        /* First byte after the end of the TPA */
+    uint32_t p_tbase   = 0;                     /* Start address of the program code   */
+    uint32_t p_tlen    = 0;                     /* Length of the program code          */
+    uint32_t p_dbase   = 0;                     /* Start address of the DATA segment   */
+    uint32_t p_dlen    = 0;                     /* Length of the DATA section          */
+    uint32_t p_bbase   = 0;                     /* Start address of the BSS segment    */
+    uint32_t p_blen    = 0;                     /* Length of the BSS section           */
+    uint32_t p_dta     = p_lowtpa + 128;        /* Pointer to the default DTA          */
+                                                /* Warning: Points first to the        */
+                                                /* command line !                      */
+    uint32_t p_parent  = 0;                     /* Pointer to the basepage of the      */
+                                                /* calling processes                   */
+    uint32_t p_resrvd0 = 0;                     /* Reserved                            */
+    uint32_t p_env     = p_hitpa;               /* Address of the environment string   */
+
+    int arg;
+
+    for(arg = 0; arg < argc; arg++)
+    {
+        char* chr = arg ? argv[arg] : "ARGV=binary";
+
+        while(*chr)
+        {
+            ram[p_hitpa++] = *chr++;
+        }
+
+        ram[p_hitpa++] = ' ';
+    }
+
+    ram[p_hitpa++] = '\0';
+    ram[p_hitpa++] = '\0';
+
+    printf("ENV: %s\r\n", &ram[p_env]);
+
+    WRITE_LONG(ram, pd + OFF_P_LOWTPA,  p_lowtpa);
+    WRITE_LONG(ram, pd + OFF_P_HITPA,   p_hitpa);
+    WRITE_LONG(ram, pd + OFF_P_TBASE,   p_tbase);
+    WRITE_LONG(ram, pd + OFF_P_TLEN,    p_tlen);
+    WRITE_LONG(ram, pd + OFF_P_DBASE,   p_dbase);
+    WRITE_LONG(ram, pd + OFF_P_DLEN,    p_dlen);
+    WRITE_LONG(ram, pd + OFF_P_BBASE,   p_bbase);
+    WRITE_LONG(ram, pd + OFF_P_BLEN,    p_blen);
+    WRITE_LONG(ram, pd + OFF_P_DTA,     p_dta);
+    WRITE_LONG(ram, pd + OFF_P_PARENT,  p_parent);
+    WRITE_LONG(ram, pd + OFF_P_RESRVD0, p_resrvd0);
+    WRITE_LONG(ram, pd + OFF_P_ENV,     p_env);
+
+    return 0;
+}
+
+bool cpu_load(uint8_t* bin, uint32_t tpasize, uint8_t* p_cmdlin, uint32_t parent_pd)
+{
     pd  = Malloc(tpasize);
 
     if(!pd)
@@ -76,10 +138,11 @@ bool cpu_load(uint8_t* bin, uint32_t tpasize, uint8_t* p_cmdlin)
     uint32_t p_dta     = p_lowtpa + 128;        /* Pointer to the default DTA          */
                                                 /* Warning: Points first to the        */
                                                 /* command line !                      */
-    uint32_t p_parent  = 0;                     /* Pointer to the basepage of the      */
+    uint32_t p_parent  = parent_pd;             /* Pointer to the basepage of the      */
                                                 /* calling processes                   */
     uint32_t p_resrvd0 = 0;                     /* Reserved                            */
-    uint32_t p_env     = 0x4000;                /* Address of the environment string   */
+
+    uint32_t p_env     = READ_LONG(ram, parent_pd + OFF_P_ENV); /* Address of the environment string   */
 
     WRITE_LONG(ram, pd + OFF_P_LOWTPA,  p_lowtpa);
     WRITE_LONG(ram, pd + OFF_P_HITPA,   p_hitpa);
@@ -153,7 +216,7 @@ bool cpu_load(uint8_t* bin, uint32_t tpasize, uint8_t* p_cmdlin)
     /* Launch binary */
     m68k_set_reg(M68K_REG_SP, p_hitpa - 8);
     WRITE_LONG(ram, p_hitpa - 4, pd);
-    m68k_set_reg(M68K_REG_PC, pd+256);
+    m68k_set_reg(M68K_REG_PC, p_tbase);
     m68k_set_reg(M68K_REG_A0, 0); /* launch as non-accessory */
 
     return true;
@@ -191,7 +254,11 @@ unsigned int cpu_read_long(unsigned int address)
     {
         case 0x4ba:
         {
-#if defined(WIN32)
+#if defined(_MSC_VER) || defined(WIN32)
+            LARGE_INTEGER t;
+            QueryPerformanceCounter(&t);
+            uint32_t ticks200 = (uint32_t)(((double)(t.QuadPart / performancecounter_frequency.QuadPart)/200.0)*(double)(2^32));
+            
 #else
             struct timespec ts;
             clock_gettime(CLOCK_MONOTONIC_RAW, &ts);

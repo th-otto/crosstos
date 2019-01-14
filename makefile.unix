@@ -2,7 +2,7 @@ export CC			= gcc
 export AS           = gcc
 export LD			= gcc
 export STRIP        = strip
-export CFLAGS  		= -Wall -pedantic -std=gnu99 -O3 -DTLSF_STATISTIC
+export CFLAGS  		= -Wall -pedantic -std=gnu99 -O3
 export LIBS         =
 export LDFLAGS   	= 
 

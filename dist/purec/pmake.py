@@ -18,7 +18,7 @@ def project(fname, libpath, includes):
 
 	objs   = ""
 	src    = list();
-	libs   = ""
+	libs   = list();
 
 	clean  = ""
 
@@ -54,7 +54,7 @@ def project(fname, libpath, includes):
 				items = line.upper().split()
 
 				if(items[0].endswith(".LIB")):
-					libs = libs + libpath + items[0] + " "
+					libs.append(items[0])
 				elif(items[0].endswith(".O")):
 					objs = objs + libpath + items[0] + " "
 				elif(items[0].endswith(".C")):
@@ -74,27 +74,35 @@ def project(fname, libpath, includes):
 			clean = clean + file[:-1] + "o "
 
 		print "NAME     = " + name
+		print "TMPOBJ   = __tmpXYZ.o"
 		print "INCLUDES = " + includes
-		print "CC       = m68k-atari-tos-purec-pcc"
-		print "PP       = m68k-atari-tos-purec-cpp"
-		print "AS       = m68k-atari-tos-purec-pasm"
-		print "LD       = m68k-atari-tos-purec-plink"
+		print "CC       = ./m68k-atari-tos-purec-pcc"
+		print "PP       = ./m68k-atari-tos-purec-cpp"
+		print "AS       = ./m68k-atari-tos-purec-pasm"
+		print "LD       = ./m68k-atari-tos-purec-plink"
 		print "CFLAGS   = " + cflags
 		print "AFLAGS   = " + aflags
 		print "LFLAGS   = " + lflags
-		print "LIBS     = " + libs
 		print "OBJECTS  = " + objs
 		print ""
 		print "all: $(NAME)"
 		print ""
 		print "$(NAME): $(OBJECTS)"
-		print "\t$(LD) $(LDFLAGS) -O=$@ $(OBJECTS) $(LIBS)"
+
+		print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(OBJECTS)" 
+
+		for lib in libs:
+			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) " + libpath + lib 
+
+		print "\t$(LD) $(LDFLAGS) -O=$@ $(TMPOBJ)" 
+		print "\trm -f $(TMPOBJ)"
+
 		print ""
 		print ".c.o:"
 		print "\t$(CC) $(CFLAGS) -O$@ $<"
 		print ""
 		print "clean:"
-		print "\t rm -f " + clean
+		print "\t rm -f " + clean + " $(TMPOBJ)"
 
 def main(argv):
   
