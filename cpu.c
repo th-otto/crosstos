@@ -17,8 +17,9 @@
 #include <sys/time.h>
 
 static uint8_t ram[1024*1024*16];
+static uint32_t pd;
 
-bool cpu_load(uint8_t* bin, uint8_t* p_cmdlin)
+bool cpu_load(uint8_t* bin, uint32_t tpasize, uint8_t* p_cmdlin)
 {
     m68k_init();
     m68k_set_cpu_type(M68K_CPU_TYPE_68000);
@@ -28,26 +29,12 @@ bool cpu_load(uint8_t* bin, uint8_t* p_cmdlin)
     bios_init(ram, sizeof(ram));
     gemdos_init(ram, sizeof(ram));
 
-    uint32_t addr  = Malloc(500000);
-    uint32_t stack = Malloc(10000);
+    pd  = Malloc(tpasize);
 
-    if(!addr)
+    if(!pd)
     {
         return false;
     }
-
-    if(!stack)
-    {
-        return false;
-    }
-
-    stack += 10000 - 8;
-
-    m68k_set_reg(M68K_REG_SP, stack);
-    WRITE_LONG(ram, stack + 4, addr);
-    m68k_set_reg(M68K_REG_PC, addr+256);
-    m68k_set_reg(M68K_REG_A0, 0); /* launch as non-accessory */
-
 
     uint16_t ph_branch      = READ_WORD(bin,  0);   /* Branch to start of the program  */
                                                     /* (must be 0x601a!)               */
@@ -78,8 +65,8 @@ bool cpu_load(uint8_t* bin, uint8_t* p_cmdlin)
         return false;
     }
 
-    uint32_t p_lowtpa  = addr;                  /* Start address of the TPA            */
-    uint32_t p_hitpa   = p_lowtpa + 1024*1024;  /* First byte after the end of the TPA */
+    uint32_t p_lowtpa  = pd;                    /* Start address of the TPA            */
+    uint32_t p_hitpa   = p_lowtpa + tpasize;    /* First byte after the end of the TPA */
     uint32_t p_tbase   = p_lowtpa + 256;        /* Start address of the program code   */
     uint32_t p_tlen    = ph_tlen;               /* Length of the program code          */
     uint32_t p_dbase   = p_tbase + p_tlen;      /* Start address of the DATA segment   */
@@ -94,23 +81,22 @@ bool cpu_load(uint8_t* bin, uint8_t* p_cmdlin)
     uint32_t p_resrvd0 = 0;                     /* Reserved                            */
     uint32_t p_env     = 0x4000;                /* Address of the environment string   */
 
+    WRITE_LONG(ram, pd + OFF_P_LOWTPA,  p_lowtpa);
+    WRITE_LONG(ram, pd + OFF_P_HITPA,   p_hitpa);
+    WRITE_LONG(ram, pd + OFF_P_TBASE,   p_tbase);
+    WRITE_LONG(ram, pd + OFF_P_TLEN,    p_tlen);
+    WRITE_LONG(ram, pd + OFF_P_DBASE,   p_dbase);
+    WRITE_LONG(ram, pd + OFF_P_DLEN,    p_dlen);
+    WRITE_LONG(ram, pd + OFF_P_BBASE,   p_bbase);
+    WRITE_LONG(ram, pd + OFF_P_BLEN,    p_blen);
+    WRITE_LONG(ram, pd + OFF_P_DTA,     p_dta);
+    WRITE_LONG(ram, pd + OFF_P_PARENT,  p_parent);
+    WRITE_LONG(ram, pd + OFF_P_RESRVD0, p_resrvd0);
+    WRITE_LONG(ram, pd + OFF_P_ENV,     p_env);
 
-    WRITE_LONG(ram, addr +  0 , p_lowtpa);
-    WRITE_LONG(ram, addr +  4 , p_hitpa);
-    WRITE_LONG(ram, addr +  8 , p_tbase);
-    WRITE_LONG(ram, addr + 12 , p_tlen);
-    WRITE_LONG(ram, addr + 16 , p_dbase);
-    WRITE_LONG(ram, addr + 20 , p_dlen);
-    WRITE_LONG(ram, addr + 24 , p_bbase);
-    WRITE_LONG(ram, addr + 28 , p_blen);
-    WRITE_LONG(ram, addr + 32 , p_dta);
-    WRITE_LONG(ram, addr + 36 , p_parent);
-    WRITE_LONG(ram, addr + 40 , p_resrvd0);
-    WRITE_LONG(ram, addr + 44 , p_env);
-
-    memset(&ram[addr + 48 ], 0, 80);
-    ram[addr + 128] = strlen(p_cmdlin);
-    strcpy(&ram[addr + 129], p_cmdlin);
+    memset(&ram[pd + OFF_P_RESRVD1 ], 0, 80);
+    ram[pd + OFF_P_CMDLIN] = strlen(p_cmdlin);
+    strcpy(&ram[pd + OFF_P_CMDLIN + 1], p_cmdlin);
 
     memcpy(&ram[p_tbase], bin + 28, p_tlen + p_dlen);
 
@@ -163,6 +149,12 @@ bool cpu_load(uint8_t* bin, uint8_t* p_cmdlin)
         }
 
     }
+
+    /* Launch binary */
+    m68k_set_reg(M68K_REG_SP, p_hitpa - 8);
+    WRITE_LONG(ram, p_hitpa - 4, pd);
+    m68k_set_reg(M68K_REG_PC, pd+256);
+    m68k_set_reg(M68K_REG_A0, 0); /* launch as non-accessory */
 
     return true;
 }
@@ -289,7 +281,7 @@ void cpu_callback_trap(uint32_t vector)
         {
             uint16_t opcode = READ_WORD(ram, m68k_get_reg(NULL, M68K_REG_SP));
 
-            m68k_set_reg(M68K_REG_D0, gemdos_dispatch(opcode, m68k_get_reg(NULL, M68K_REG_SP) + 2) );
+            m68k_set_reg(M68K_REG_D0, gemdos_dispatch(opcode, pd));
         }
             break;
 
@@ -297,7 +289,7 @@ void cpu_callback_trap(uint32_t vector)
         {
             uint16_t opcode = READ_WORD(ram, m68k_get_reg(NULL, M68K_REG_SP));
 
-            m68k_set_reg(M68K_REG_D0, bios_dispatch(opcode, m68k_get_reg(NULL, M68K_REG_SP) + 2) );
+            m68k_set_reg(M68K_REG_D0, bios_dispatch(opcode,pd));
         }
           break;
 
@@ -306,7 +298,7 @@ void cpu_callback_trap(uint32_t vector)
         {
             uint16_t opcode = READ_WORD(ram, m68k_get_reg(NULL, M68K_REG_SP));
 
-            m68k_set_reg(M68K_REG_D0, xbios_dispatch(opcode, m68k_get_reg(NULL, M68K_REG_SP) + 2) );
+            m68k_set_reg(M68K_REG_D0, xbios_dispatch(opcode,pd));
         }
           break;
 

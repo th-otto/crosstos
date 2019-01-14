@@ -38,7 +38,7 @@ extern void cpu_pulse_reset(void);
 extern void cpu_set_fc(unsigned int fc);
 extern int  cpu_irq_ack(int level);
 
-extern bool cpu_load(uint8_t* bin, uint8_t* p_cmdlin);
+extern bool cpu_load(uint8_t* bin, uint32_t tpasize, uint8_t* p_cmdlin);
 extern void cpu_exit(void);
 
 #define cpu_run(cycles)     m68k_execute(cycles)

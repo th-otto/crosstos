@@ -6,7 +6,7 @@
 
 static uint8_t* rambase = NULL;
 
-uint32_t bios_dispatch(uint16_t opcode, uint32_t prm)
+uint32_t bios_dispatch(uint16_t opcode, uint32_t pd)
 {
 	uint32_t retval = opcode;
 

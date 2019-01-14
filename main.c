@@ -37,12 +37,12 @@ int main( int argc, char* args[] )
 
     cmd[i] = '\0';
 
-    if(cpu_load(binary, cmd))
+    if(cpu_load(binary, 500000, cmd))
     {
         do
         {
-            char buf[1000];
-            m68k_disassemble(buf, m68k_get_reg(NULL, M68K_REG_PC), M68K_CPU_TYPE_68000);
+           // char buf[1000];
+         //   m68k_disassemble(buf, m68k_get_reg(NULL, M68K_REG_PC), M68K_CPU_TYPE_68000);
 
         //    printf("%08x %s\n", m68k_get_reg(NULL, M68K_REG_PC), buf);
          //   cpu_run(1);
