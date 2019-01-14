@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 #include "cpu.h"
 #include "xbios.h"
 #include "bios.h"
@@ -58,6 +60,8 @@ bool cpu_load(uint8_t* bin, uint8_t* p_cmdlin)
     uint32_t ph_prgflags    = READ_LONG(bin, 22);   /* Program flags                   */
     uint16_t ph_absflag     = READ_WORD(bin, 26);   /* 0 = Relocation info present     */
 
+    (void)ph_prgflags;
+    (void)ph_res1;
 
  /*   printf("ph_branch    = %08x\n", ph_branch);
     printf("ph_tlen      = %08x\n", ph_tlen);
@@ -195,12 +199,15 @@ unsigned int cpu_read_long(unsigned int address)
     {
         case 0x4ba:
         {
+#if defined(WIN32)
+#else
             struct timespec ts;
             clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
 
             uint32_t ticks200 = (ts.tv_nsec / (1000000000/200)) + ts.tv_sec * 200;
 
             WRITE_LONG(ram, address, ticks200);
+#endif
         }
             break;
 

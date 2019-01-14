@@ -1,86 +1,55 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "binary.h"
 #include "cpu.h"
-
-#if defined(BINARY)
-extern uint8_t binary[];
-#define FIRST_PARAM (1)
-#else
-#define FIRST_PARAM (2)
-#endif
 
 int main( int argc, char* args[] )
 {
     bool done = false;
 
-#if !defined(BINARY)
-     uint8_t* binary = NULL;
+    uint8_t cmd[255] = "";
 
-    if(argc > 1)
+    int arg;
+
+    int i = 0;
+
+    for(arg = 1; arg < argc; arg++)
     {
-        FILE* fd = fopen(args[1], "r");
+        char* aptr = args[arg];
 
-        if(fd)
+        while(*aptr && i < (sizeof(cmd) - 1))
         {
-            int size;
+            cmd[i++] = *aptr++;
+        }
 
-            fseek(fd, 0, SEEK_END);
-            size = ftell(fd);
-            fseek(fd, 0, SEEK_SET);
-
-            binary = malloc(size);
-
-            if(binary)
-            {
-                int read = fread(binary, 1, size, fd);
-
-                free(binary);
-
-                if(read != size)
-                {
-                    binary = NULL;
-                }
-            }
-
-
-            fclose(fd);
+        if(i < (sizeof(cmd) - 1))
+        {
+            cmd[i++] = ' ';
+        }
+        else
+        {
+            break;
         }
     }
-#endif
 
-    if(binary)
+    cmd[i] = '\0';
+
+    if(cpu_load(binary, cmd))
     {
-        char cmd[255] = "";
-
-        int arg;
-
-        for(arg = FIRST_PARAM; arg < argc; arg++)
+        do
         {
-            strlcat(cmd, args[arg], sizeof(cmd));
-            strlcat(cmd, " ", sizeof(cmd));
-        }
+            char buf[1000];
+            m68k_disassemble(buf, m68k_get_reg(NULL, M68K_REG_PC), M68K_CPU_TYPE_68000);
 
-        printf("Command line: %s\n", cmd);
+        //    printf("%08x %s\n", m68k_get_reg(NULL, M68K_REG_PC), buf);
+         //   cpu_run(1);
 
-        if(cpu_load(binary, cmd))
-        {
-            do
-            {
-                char buf[1000];
-                m68k_disassemble(buf, m68k_get_reg(NULL, M68K_REG_PC), M68K_CPU_TYPE_68000);
-
-            //    printf("%08x %s\n", m68k_get_reg(NULL, M68K_REG_PC), buf);
-             //   cpu_run(1);
-
-                cpu_run(8000000);
-          
-            } while(!done);
-        }
-    }
-    else
-    {
-        printf("Binary not specified.\n");
+            cpu_run(8000000);
+      
+        } while(!done);
     }
 
     return 0;

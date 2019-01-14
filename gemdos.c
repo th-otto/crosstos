@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 #include "cpu.h"
 #include "gemdos.h"
 #include "tlsf.h"
@@ -162,7 +164,7 @@ uint32_t Malloc(int32_t bytes)
     return get_max_size(rampool);
 }
 
-uint32_t gemdos_dispatch(uint16_t opcode, void* prm)
+uint32_t gemdos_dispatch(uint16_t opcode, uint32_t prm)
 {
     uint32_t retval = opcode;
 
@@ -312,6 +314,8 @@ uint32_t gemdos_dispatch(uint16_t opcode, void* prm)
             char*    buf    = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
             int16_t  drive  = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 6);
 
+            (void)drive;
+
             strcpy(buf, ".");
 
             retval = GEMDOS_E_OK;
@@ -358,6 +362,8 @@ uint32_t gemdos_dispatch(uint16_t opcode, void* prm)
             int16_t  handle = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 6);
             int16_t  wflag  = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 8);
 
+            (void)handle;
+
             if(wflag)
             {
                 /* Set values */
@@ -386,6 +392,8 @@ uint32_t gemdos_dispatch(uint16_t opcode, void* prm)
         }
             break;
     }
+
+    return retval;
 }
 
 void gemdos_init(uint8_t* ram, uint32_t ramsize)

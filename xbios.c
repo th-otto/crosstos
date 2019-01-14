@@ -1,10 +1,12 @@
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "cpu.h"
 
 static uint8_t* rambase = NULL;
 
-uint32_t xbios_dispatch(uint16_t opcode, void* prm)
+uint32_t xbios_dispatch(uint16_t opcode, uint32_t prm)
 {
 	uint32_t retval = opcode;
 

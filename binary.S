@@ -1,6 +1,8 @@
 #if defined(BINARY)
 
-    .globl _binary
+	.data
+
+.globl _binary
 
 _binary:
 

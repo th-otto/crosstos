@@ -1,0 +1,55 @@
+export CC			= gcc
+export AS           = gcc
+export LD			= gcc
+export STRIP        = strip
+export CFLAGS  		= -Wall -pedantic -std=gnu99 -O3 -DTLSF_STATISTIC
+export LIBS         =
+export LDFLAGS   	= 
+
+PREFIX      = 	m68k-atari-tos
+SUFFIX      =   
+
+PUREC   	 = 	./dist/purec/$(PREFIX)-purec-pcc$(SUFFIX) \
+				./dist/purec/$(PREFIX)-purec-cpp$(SUFFIX) \
+				./dist/purec/$(PREFIX)-purec-pasm$(SUFFIX) \
+				./dist/purec/$(PREFIX)-purec-bgiobj$(SUFFIX) \
+				./dist/purec/$(PREFIX)-purec-dispobj$(SUFFIX) \
+				./dist/purec/$(PREFIX)-purec-hc$(SUFFIX) \
+				./dist/purec/$(PREFIX)-purec-plink$(SUFFIX)
+
+DEVPAC   	 = 	./dist/devpac/$(PREFIX)-devpac-clink$(SUFFIX) \
+				./dist/devpac/$(PREFIX)-devpac-gen$(SUFFIX) \
+				./dist/devpac/$(PREFIX)-devpac-crsplit$(SUFFIX) \
+				./dist/devpac/$(PREFIX)-devpac-strip$(SUFFIX) 
+
+all:		$(PUREC) $(DEVPAC)
+
+
+./dist/purec/$(PREFIX)-purec-pcc$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/purec/PCC.TTP" NAME=$@
+./dist/purec/$(PREFIX)-purec-cpp$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/purec/CPP.TTP" NAME=$@
+./dist/purec/$(PREFIX)-purec-pasm$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/purec/PASM.TTP" NAME=$@
+./dist/purec/$(PREFIX)-purec-bgiobj$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/purec/BGIOBJ.TTP" NAME=$@
+./dist/purec/$(PREFIX)-purec-dispobj$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/purec/DISPOBJ.TTP" NAME=$@
+./dist/purec/$(PREFIX)-purec-hc$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/purec/HC.TTP" NAME=$@
+./dist/purec/$(PREFIX)-purec-plink$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/purec/PLINK.TTP" NAME=$@
+
+./dist/devpac/$(PREFIX)-devpac-clink$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/devpac/bin/clink.ttp" NAME=$@
+./dist/devpac/$(PREFIX)-devpac-gen$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/devpac/bin/gen.ttp" NAME=$@
+./dist/devpac/$(PREFIX)-devpac-crsplit$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/devpac/bin/srsplit.ttp" NAME=$@
+./dist/devpac/$(PREFIX)-devpac-strip$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/devpac/bin/strip.ttp" NAME=$@
+
+# Remove all build files
+clean:
+		rm -f $(PUREC) $(DEVPAC)
+		make -f build.single clean

@@ -1,13 +1,6 @@
-CC				= gcc
-AS              = gcc
-STRIP           = strip
-CFLAGS  		= -Wall -pedantic -std=gnu99 -O3 -DTLSF_STATISTIC
-#DEFINES			= -DTOS_BINARY="\"./abin/PCC.TTP\"" -D__UNIX__ 
-DEFINES			= -DBINARY=\"$(TOS_BINARY)\" -D__UNIX__ 
+DEFINES			= -DBINARY=\"$(TOS_BINARY)\"
 
 INCLUDES		= -I. -I./mushashi -I./TLSF-2.4.6/src
-LIBS			=
-LDFLAGS   		= 
 
 BINARY          = ./binary.o
 
@@ -33,9 +26,8 @@ all:		$(NAME)
 
 # Generate target
 $(NAME):	$(OBJECTS)
-		$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
+		$(LD) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
 		$(STRIP) $(NAME)
-		rm -f $(BINARY)
 
 # Generic compilation target
 .c.o:
