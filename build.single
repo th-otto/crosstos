@@ -1,6 +1,6 @@
 DEFINES			= -DBINARY=\"$(TOS_BINARY)\"
 
-INCLUDES		= -I. -I./mushashi -I./TLSF-2.4.6/src
+INCLUDES		= -I. -I./mushashi -I./tinyalloc -I./TLSF-2.4.6/src
 
 BINARY          = ./binary.o
 
@@ -16,27 +16,27 @@ OBJECTS			= ./main.o \
 				  ./musashi/m68kopdm.o 	\
 				  ./musashi/m68kdasm.o
 
-OBJECTS			+= ./TLSF-2.4.6/src/tlsf.o
+OBJECTS         += ./tinyalloc/tinyalloc.o
 
 OBJECTS			+= $(BINARY)
-
+ 
 
 # Build all
 all:		$(NAME)
 
 # Generate target
 $(NAME):	$(OBJECTS)
-		$(LD) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
-		$(STRIP) $(NAME)
-		rm -f $(BINARY)
+			$(LD) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
+			$(STRIP) $(NAME)
+			rm -f $(BINARY)
 
 # Generic compilation target
 .c.o:
-		$(CC) -c $(CFLAGS) $(INCLUDES) $(DEFINES) $< -o $@
+			$(CC) -c $(CFLAGS) $(INCLUDES) $(DEFINES) $< -o $@
 
 .S.o:
-		$(CC) -c $(CFLAGS) $(INCLUDES) $(DEFINES) $< -o $@
+			$(CC) -c $(CFLAGS) $(INCLUDES) $(DEFINES) $< -o $@
 
 # Remove all build files
 clean:
-		rm -f $(OBJECTS)
+			rm -f $(OBJECTS)

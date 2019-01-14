@@ -10,7 +10,7 @@
 #include <string.h>
 #include "cpu.h"
 #include "gemdos.h"
-#include "tlsf.h"
+#include "tinyalloc.h"
 
 #include <time.h>
 #include <sys/time.h>
@@ -22,11 +22,10 @@ typedef struct file_s
     bool  std;
 } file_t;
 
-static uint8_t* rambase = NULL;
-static void*    rampool = NULL;
+uint8_t ta_base[0x1000*16];
 
+static uint8_t* rambase = NULL;
 static file_t   handles[16];
-static uint32_t block_malloc[256];
 
 int32_t Fopen(char* fname, int16_t mode)
 {
@@ -208,43 +207,32 @@ uint32_t Mshrink(uint32_t block, uint32_t bytes)
 
 void Mfree(uint32_t block)
 {
-    int i;
-
-    for(i = 0; i < (sizeof(block_malloc) / sizeof(block_malloc[0])); i++)
-    {
-        if(block_malloc[i] == block)
-        {
-            free_ex(&rambase[block], rampool);
-            block_malloc[i] = 0;
-        }
-    }
+    ta_free(block);
 }
 
 uint32_t Malloc(int32_t bytes)
 {
-    if(bytes > 0)
+    uint32_t retval = 0;
+
+    if(bytes == -1)
     {
-        int i;
-
-        for(i = 0; i < (sizeof(block_malloc) / sizeof(block_malloc[0])); i++)
-        {
-            if(!block_malloc[i])
-            {
-                block_malloc[i] = ((uint8_t*)malloc_ex(bytes, rampool)) - rambase;
-
-                return block_malloc[i];
-            }
-        }
+        retval = ta_biggest_block();
+    }
+    else
+    {
+        retval = ta_alloc(bytes);
     }
 
-    return get_max_size(rampool);
+  //  printf("Malloc(%08x) = 0x%08x\r\n", bytes, retval);
+
+    return retval;
 }
 
 uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 {
     uint32_t retval = opcode;
 
-  //  printf("gemdos %02x\n", opcode);
+ //   printf("gemdos %02x\n", opcode);
 
     switch(opcode)
     {
@@ -581,9 +569,8 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 void gemdos_init(uint8_t* ram, uint32_t ramsize)
 {
     rambase = ram;
-    rampool = &ram[0x800];
 
-    init_memory_pool(ramsize - 0x800, rampool);
+    ta_init();
 
     handles[0].fd    = stdin;
     handles[0].fname = "STDIN:";
@@ -600,6 +587,4 @@ void gemdos_init(uint8_t* ram, uint32_t ramsize)
     handles[3].fd    = stderr;
     handles[3].fname = "STDPRN:";
     handles[3].std   = true;
-
-    memset(block_malloc, 0, sizeof(block_malloc));
 }
