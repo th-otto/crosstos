@@ -194,13 +194,37 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t prm)
         }
             break;
 
-        case 0x08: /* Cnecin() */
+        case 0x0006: /* int32_t Crawio ( int16_t w ); */
+        {
+            uint16_t w = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2);
+
+            if(w == 0x00ff) /* Read character from standard input */
+            {
+                /* ignore */
+                retval = 0;
+            }
+            else
+            {
+                putchar(w);
+                retval = 0;
+            }
+
+        }
+            break;
+
+        case 0x0007: /* int32_t Crawcin ( void ); */
+        {
+            retval = ' '; /* space pressed */
+        }
+            break;
+
+        case 0x0008: /* Cnecin() */
         {
             retval = GEMDOS_E_OK;
         }
             break;
 
-        case 0x09: /* Cconws() */
+        case 0x0009: /* Cconws() */
         {
             char* buf = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
 
