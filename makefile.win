@@ -45,6 +45,9 @@ GBE_PRE		=	./dist/gbe/$(PREFIX)-gbe
 GBE 	   	= 	$(GBE_PRE)-gc$(SUFFIX) \
 				$(GBE_PRE)-gl$(SUFFIX)
 
+MMMCLI_PRE	=	./dist/mmmcli/mmmcli
+MMMCLI 	   	= 	$(MMMCLI_PRE)mmmcli$(SUFFIX)
+
 DEVPAC_PRE	=	./dist/devpac/$(PREFIX)-devpac
 DEVPAC   	= 	$(DEVPAC_PRE)-clink$(SUFFIX) \
 				$(DEVPAC_PRE)-gen$(SUFFIX) \
@@ -116,6 +119,9 @@ $(GBE_PRE)-gc$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/gbe/libs/gbe_68k.lib/gc_68k.prg" NAME=$@
 $(GBE_PRE)-gl$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/gbe/libs/gbe_68k.lib/gl_68k.prg" NAME=$@
+
+$(MMMCLI_PRE)mmmcli$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/mmmcli/mmmcli.prg" NAME=$@
 
 $(DEVPAC_PRE)-clink$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/devpac/bin/clink.ttp" NAME=$@

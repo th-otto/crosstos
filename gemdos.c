@@ -15,17 +15,86 @@
 #include <time.h>
 #include <sys/time.h>
 
-typedef struct file_s
+#if defined(WIN32)
+#include <conio.h>
+#else
+
+#include <unistd.h>
+#include <termios.h>
+#include <assert.h>
+
+int getch(void)
 {
-    FILE* fd;
-    char* fname;
-    bool  std;
-} file_t;
+      int c=0;
+
+      struct termios org_opts, new_opts;
+      int res=0;
+          //-----  store old settings -----------
+      res=tcgetattr(STDIN_FILENO, &org_opts);
+      assert(res==0);
+          //---- set new terminal parms --------
+      memcpy(&new_opts, &org_opts, sizeof(new_opts));
+      new_opts.c_lflag &= ~(ICANON | ECHO | ECHOE | ECHOK | ECHONL | ECHOPRT | ECHOKE | ICRNL);
+      tcsetattr(STDIN_FILENO, TCSANOW, &new_opts);
+      c=getchar();
+          //------  restore old settings ---------
+      res=tcsetattr(STDIN_FILENO, TCSANOW, &org_opts);
+      assert(res==0);
+
+      if(c == 0x0a)
+      {
+        c = 0x0d;
+      }
+
+      return(c);
+}
+#endif
+
+static file_t handles[16];
 
 uint8_t ta_base[0x1000*16];
 
 static uint8_t* rambase = NULL;
-static file_t   handles[16];
+
+static int32_t writer_file(int16_t handle, int32_t count, void *buf)
+{
+    return fwrite(buf, 1, count, handles[handle].fd);
+}
+
+
+static int32_t writer_null(int16_t handle, int32_t count, void *buf)
+{
+    return count;
+}
+
+static int32_t writer_term(int16_t handle, int32_t count, void *buf)
+{
+    int32_t tmp = count;
+    uint8_t* c  = buf;
+
+    while(tmp--)
+    {
+        vt52_out(*c++, &handles[handle]);
+    }
+
+    return count;
+}
+
+
+static int32_t reader_file(int16_t handle, int32_t count, void *buf)
+{
+    return fread(buf, 1, count, handles[handle].fd);
+}
+
+static int32_t reader_null(int16_t handle, int32_t count, void *buf)
+{
+    return 0;
+}
+
+static int32_t reader_term(int16_t handle, int32_t count, void *buf)
+{
+    return fread(buf, 1, count, handles[handle].fd);
+}
 
 int32_t Fopen(char* fname, int16_t mode)
 {
@@ -72,7 +141,7 @@ int16_t Fclose(int16_t handle)
 {
     if(handle < 16)
     {
-        if(!handles[handle].std)
+        if(handles[handle].term.state == not_term)
         {
             fclose(handles[handle].fd);
 
@@ -154,7 +223,7 @@ int32_t Fread(int16_t handle, int32_t count, void *buf)
     {
         if(handles[handle].fd)
         {
-            return fread(buf, 1, count, handles[handle].fd);
+            return handles[handle].reader(handle, count, buf);
         }
     }
 
@@ -167,7 +236,7 @@ int32_t Fwrite(int16_t handle, int32_t count, void *buf)
     {
         if(handles[handle].fd)
         {
-            return fwrite(buf, 1, count, handles[handle].fd);
+            return handles[handle].writer(handle, count, buf);
         }
     }
 
@@ -228,11 +297,12 @@ uint32_t Malloc(int32_t bytes)
     return retval;
 }
 
+
 uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 {
     uint32_t retval = opcode;
 
- //   printf("gemdos %02x\n", opcode);
+    // printf("gemdos %02x\n", opcode);
 
     switch(opcode)
     {
@@ -252,9 +322,17 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
         case 0x0002: /* Cconout() */
         {
-            putchar(READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2));
+            int16_t  c  = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2);
 
-            retval = GEMDOS_E_OK;
+            retval = (vt52_out(c, &handles[1]) == EOF) ? -1 : GEMDOS_E_OK;
+        }
+            break;
+
+        case 0x0004: /* int32_t Cauxout ( int16_t c );*/
+        {
+            int16_t  c  = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2);
+
+            retval = (vt52_out(c, &handles[2]) == EOF) ? -1 : GEMDOS_E_OK;
         }
             break;
 
@@ -269,8 +347,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
             }
             else
             {
-                putchar(w);
-                retval = 0;
+                retval = (vt52_out(w, &handles[1]) == EOF) ? -1 : GEMDOS_E_OK;
             }
 
         }
@@ -278,7 +355,10 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
         case 0x0007: /* int32_t Crawcin ( void ); */
         {
-            retval = ' '; /* space pressed */
+            do
+            {
+                retval = getch(); /* ASCII in bits 0...7 */
+            } while(!retval);
         }
             break;
 
@@ -292,9 +372,16 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
         {
             char* buf = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
 
-            printf("%s\n", buf);
-
             retval = GEMDOS_E_OK;
+
+            while(*buf)
+            {
+                if(vt52_out(*buf++, &handles[1]) == EOF)
+                {
+                    break;
+                    retval = -1;
+                }
+            }
         }
             break;
 
@@ -438,6 +525,12 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
         }
             break;
 
+        case 0x0045: /* Fdup() */
+        {
+            printf("Ignoring Fdup() \n");
+        }
+            break;
+
         case 0x0046: /* int16_t Fforce ( int16_t stdh, int16_t nonstdh ); */
         {
             int16_t  stdh    = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2);
@@ -556,7 +649,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
         default:
         {
-            printf("unknown GEMDOS call (%04x)\n", opcode);
+            printf("unknown GEMDOS call (0x%04x)\n", opcode);
             exit(0);
         }
             break;
@@ -568,23 +661,47 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
 void gemdos_init(uint8_t* ram, uint32_t ramsize)
 {
+    int i;
+
     rambase = ram;
 
     ta_init();
 
-    handles[0].fd    = stdin;
-    handles[0].fname = "STDIN:";
-    handles[0].std   = true;
+    i = 0;
+    handles[i].fd     = stdin;
+    handles[i].fname  = "STDIN:";
+    handles[i].term.state = normal;
+    handles[i].reader = reader_term;
+    handles[i].writer = writer_null;
 
-    handles[1].fd    = stdout;
-    handles[1].fname = "STDOUT:";
-    handles[1].std   = true;
+    i++;
+    handles[i].fd    = stdout;
+    handles[i].fname = "STDOUT:";
+    handles[i].term.state = normal;
+    handles[i].reader = reader_null;
+    handles[i].writer = writer_term;
 
-    handles[2].fd    = stderr;
-    handles[2].fname = "STDAUX:";
-    handles[2].std   = true;
+    i++;
+    handles[i].fd    = stderr;
+    handles[i].fname = "STDAUX:";
+    handles[i].term.state = normal;
+    handles[i].reader = reader_null;
+    handles[i].writer = writer_term;
 
-    handles[3].fd    = stderr;
-    handles[3].fname = "STDPRN:";
-    handles[3].std   = true;
+    i++;
+    handles[i].fd    = stderr;
+    handles[i].fname = "STDPRN:";
+    handles[i].term.state = normal;
+    handles[i].reader = reader_null;
+    handles[i].writer = writer_term;
+
+    for(; i < sizeof(handles) / sizeof(handles[0]); i++)
+    {
+        handles[i].fd    = 0;
+        handles[i].fname = "";
+        handles[i].term.state = not_term;
+        handles[i].reader = reader_file;
+        handles[i].writer = writer_file;  
+    }
+
 }

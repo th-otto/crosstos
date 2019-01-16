@@ -9,6 +9,7 @@ OBJECTS			= ./main.o \
 				  ./gemdos.o  	\
 				  ./bios.o  	\
 				  ./xbios.o  	\
+				  ./vt52.o      \
 				  ./musashi/m68kcpu.o 	\
 				  ./musashi/m68kops.o 	\
 				  ./musashi/m68kopac.o 	\

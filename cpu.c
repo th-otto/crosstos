@@ -344,11 +344,23 @@ void cpu_callback_trap(uint32_t vector)
 {
     switch(vector)
     {
+        case 0x10:  /* LINEA */
+        {
+            printf("IGNORING LineaA\n");
+        }
+            break;
+
         case 0x21:  /* GEMDOS */
         {
             uint16_t opcode = READ_WORD(ram, m68k_get_reg(NULL, M68K_REG_SP));
 
             m68k_set_reg(M68K_REG_D0, gemdos_dispatch(opcode, pd));
+        }
+            break;
+
+        case 0x22:
+        {
+            printf("Ignoring AES/VDI call\n");
         }
             break;
 

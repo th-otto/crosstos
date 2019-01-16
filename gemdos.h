@@ -2,6 +2,8 @@
 #define _GEMDOS_H_
 
 #include <stdint.h>
+#include <stdbool.h>
+#include <stdio.h>
 
 #define GEMDOS_E_OK 	(0)
 #define GEMDOS_EFILNF	(-33)
@@ -22,6 +24,31 @@
 #define OFF_P_ENV     (44)
 #define OFF_P_RESRVD1 (48)
 #define OFF_P_CMDLIN  (128)
+
+typedef struct file_s
+{
+    FILE* fd;
+
+    char* fname;
+
+    struct $
+    {
+    	enum
+	    {
+	    	not_term = 0,
+	        normal,
+	        escaped,
+	        extended,
+	        set_xy,
+	    } state;
+
+	    char tmp;
+    } term;
+
+    int32_t (*writer) (int16_t handle, int32_t count, void *buf);
+    int32_t (*reader) (int16_t handle, int32_t count, void *buf);
+
+} file_t;
 
 extern void 	Mfree(uint32_t block);
 extern uint32_t Malloc(int32_t bytes);

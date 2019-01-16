@@ -45,13 +45,16 @@ GBE_PRE		=	./dist/gbe/$(PREFIX)-gbe
 GBE 	   	= 	$(GBE_PRE)-gc$(SUFFIX) \
 				$(GBE_PRE)-gl$(SUFFIX)
 
+MMMCLI_PRE	=	./dist/mmmcli/
+MMMCLI 	   	= 	$(MMMCLI_PRE)cli$(SUFFIX)
+
 DEVPAC_PRE	=	./dist/devpac/$(PREFIX)-devpac
 DEVPAC   	= 	$(DEVPAC_PRE)-clink$(SUFFIX) \
 				$(DEVPAC_PRE)-gen$(SUFFIX) \
 				$(DEVPAC_PRE)-crsplit$(SUFFIX) \
 				$(DEVPAC_PRE)-strip$(SUFFIX) 
 
-all:		$(PC) $(LC) $(GBE) $(DEVPAC)
+all:		$(PC) $(LC) $(GBE) $(MMMCLI) $(DEVPAC)
 
 
 $(PC_PRE)-pcc$(SUFFIX):
@@ -117,6 +120,9 @@ $(GBE_PRE)-gc$(SUFFIX):
 $(GBE_PRE)-gl$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/gbe/libs/gbe_68k.lib/gl_68k.prg" NAME=$@
 
+$(MMMCLI_PRE)cli$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/mmmcli/cli.prg" NAME=$@
+
 $(DEVPAC_PRE)-clink$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/devpac/bin/clink.ttp" NAME=$@
 $(DEVPAC_PRE)-gen$(SUFFIX):
@@ -128,5 +134,5 @@ $(DEVPAC_PRE)-strip$(SUFFIX):
 
 # Remove all build files
 clean:
-		rm -f $(PC) $(LC) $(DEVPAC)
+		rm -f $(PC) $(LC) $(GBE) $(MMMCLI) $(DEVPAC)
 		make -f build.single clean

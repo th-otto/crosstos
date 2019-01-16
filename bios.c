@@ -10,6 +10,8 @@ uint32_t bios_dispatch(uint16_t opcode, uint32_t pd)
 {
 	uint32_t retval = opcode;
 
+    //printf("bios %02x\n", opcode);
+
     switch(opcode)
     {
         case 0x0003: /* VOID Bconout ( int16_t dev, int16_t c ); */
