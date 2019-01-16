@@ -9,47 +9,116 @@ export LDFLAGS   	=
 PREFIX      = 	m68k-atari-tos
 SUFFIX      =   
 
-PUREC   	 = 	./dist/purec/$(PREFIX)-purec-pcc$(SUFFIX) \
-				./dist/purec/$(PREFIX)-purec-cpp$(SUFFIX) \
-				./dist/purec/$(PREFIX)-purec-pasm$(SUFFIX) \
-				./dist/purec/$(PREFIX)-purec-bgiobj$(SUFFIX) \
-				./dist/purec/$(PREFIX)-purec-dispobj$(SUFFIX) \
-				./dist/purec/$(PREFIX)-purec-hc$(SUFFIX) \
-				./dist/purec/$(PREFIX)-purec-plink$(SUFFIX)
+PC_PRE      =   ./dist/purec/$(PREFIX)-purec
+PC    	 	= 	$(PC_PRE)-pcc$(SUFFIX) \
+				$(PC_PRE)-cpp$(SUFFIX) \
+				$(PC_PRE)-pasm$(SUFFIX) \
+				$(PC_PRE)-bgiobj$(SUFFIX) \
+				$(PC_PRE)-dispobj$(SUFFIX) \
+				$(PC_PRE)-hc$(SUFFIX) \
+				$(PC_PRE)-plink$(SUFFIX)
 
-DEVPAC   	 = 	./dist/devpac/$(PREFIX)-devpac-clink$(SUFFIX) \
-				./dist/devpac/$(PREFIX)-devpac-gen$(SUFFIX) \
-				./dist/devpac/$(PREFIX)-devpac-crsplit$(SUFFIX) \
-				./dist/devpac/$(PREFIX)-devpac-strip$(SUFFIX) 
+LC_PRE		=	./dist/lc/$(PREFIX)-lc
+LC   	 	= 	$(LC_PRE)-ar$(SUFFIX) \
+				$(LC_PRE)-asm$(SUFFIX) \
+				$(LC_PRE)-clink$(SUFFIX) \
+				$(LC_PRE)-cpxbuild$(SUFFIX)\
+				$(LC_PRE)-dercs$(SUFFIX) \
+				$(LC_PRE)-dr2lc$(SUFFIX) \
+				$(LC_PRE)-go$(SUFFIX) \
+				$(LC_PRE)-gstlib$(SUFFIX) \
+				$(LC_PRE)-lc1b$(SUFFIX) \
+				$(LC_PRE)-lc2$(SUFFIX) \
+				$(LC_PRE)-lcc$(SUFFIX) \
+				$(LC_PRE)-lcompact$(SUFFIX) \
+				$(LC_PRE)-linkst$(SUFFIX) \
+				$(LC_PRE)-lprof$(SUFFIX) \
+				$(LC_PRE)-lstat$(SUFFIX) \
+				$(LC_PRE)-make$(SUFFIX) \
+				$(LC_PRE)-omd$(SUFFIX) \
+				$(LC_PRE)-oml$(SUFFIX) \
+				$(LC_PRE)-strip$(SUFFIX) \
+				$(LC_PRE)-touch$(SUFFIX) \
+				$(LC_PRE)-wconvert$(SUFFIX)
 
-all:		$(PUREC) $(DEVPAC)
+DEVPAC_PRE	=	./dist/devpac/$(PREFIX)-devpac
+DEVPAC   	= 	$(DEVPAC_PRE)-clink$(SUFFIX) \
+				$(DEVPAC_PRE)-gen$(SUFFIX) \
+				$(DEVPAC_PRE)-crsplit$(SUFFIX) \
+				$(DEVPAC_PRE)-strip$(SUFFIX) 
+
+all:		$(PC) $(LC) $(DEVPAC)
 
 
-./dist/purec/$(PREFIX)-purec-pcc$(SUFFIX):
+$(PC_PRE)-pcc$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/purec/PCC.TTP" NAME=$@
-./dist/purec/$(PREFIX)-purec-cpp$(SUFFIX):
+$(PC_PRE)-cpp$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/purec/CPP.TTP" NAME=$@
-./dist/purec/$(PREFIX)-purec-pasm$(SUFFIX):
+$(PC_PRE)-pasm$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/purec/PASM.TTP" NAME=$@
-./dist/purec/$(PREFIX)-purec-bgiobj$(SUFFIX):
+$(PC_PRE)-bgiobj$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/purec/BGIOBJ.TTP" NAME=$@
-./dist/purec/$(PREFIX)-purec-dispobj$(SUFFIX):
+$(PC_PRE)-dispobj$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/purec/DISPOBJ.TTP" NAME=$@
-./dist/purec/$(PREFIX)-purec-hc$(SUFFIX):
+$(PC_PRE)-hc$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/purec/HC.TTP" NAME=$@
-./dist/purec/$(PREFIX)-purec-plink$(SUFFIX):
+$(PC_PRE)-plink$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/purec/PLINK.TTP" NAME=$@
 
-./dist/devpac/$(PREFIX)-devpac-clink$(SUFFIX):
+$(LC_PRE)-ar$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/AR.TTP" NAME=$@
+$(LC_PRE)-asm$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/ASM.TTP" NAME=$@
+$(LC_PRE)-clink$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/CLINK.TTP" NAME=$@
+$(LC_PRE)-cpxbuild$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/CPXBUILD.TTP" NAME=$@
+$(LC_PRE)-dercs$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/DERCS.TTP" NAME=$@
+$(LC_PRE)-dr2lc$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/DR2LC.TTP" NAME=$@
+$(LC_PRE)-go$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/GO.TTP" NAME=$@
+$(LC_PRE)-gstlib$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/GSTLIB.TTP" NAME=$@
+$(LC_PRE)-lc1b$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/LC1B.TTP" NAME=$@
+$(LC_PRE)-lc2$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/LC2.TTP" NAME=$@
+$(LC_PRE)-lcc$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/LCC.TTP" NAME=$@
+$(LC_PRE)-lcompact$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/LCOMPACT.TTP" NAME=$@
+$(LC_PRE)-linkst$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/LINKST.TTP" NAME=$@
+$(LC_PRE)-lprof$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/LPROF.TTP" NAME=$@
+$(LC_PRE)-lstat$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/LSTAT.TTP" NAME=$@
+$(LC_PRE)-make$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/MAKE.TTP" NAME=$@
+$(LC_PRE)-omd$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/OMD.TTP" NAME=$@
+$(LC_PRE)-oml$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/OML.TTP" NAME=$@
+$(LC_PRE)-strip$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/STRIP.TTP" NAME=$@
+$(LC_PRE)-touch$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/TOUCH.TTP" NAME=$@
+$(LC_PRE)-wconvert$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/lc/bin/WCONVERT.TTP" NAME=$@
+
+
+$(DEVPAC_PRE)-clink$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/devpac/bin/clink.ttp" NAME=$@
-./dist/devpac/$(PREFIX)-devpac-gen$(SUFFIX):
+$(DEVPAC_PRE)-gen$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/devpac/bin/gen.ttp" NAME=$@
-./dist/devpac/$(PREFIX)-devpac-crsplit$(SUFFIX):
+$(DEVPAC_PRE)-crsplit$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/devpac/bin/srsplit.ttp" NAME=$@
-./dist/devpac/$(PREFIX)-devpac-strip$(SUFFIX):
+$(DEVPAC_PRE)-strip$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/devpac/bin/strip.ttp" NAME=$@
 
 # Remove all build files
 clean:
-		rm -f $(PUREC) $(DEVPAC)
+		rm -f $(PC) $(LC) $(DEVPAC)
 		make -f build.single clean
