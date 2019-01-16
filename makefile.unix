@@ -41,13 +41,17 @@ LC   	 	= 	$(LC_PRE)-ar$(SUFFIX) \
 				$(LC_PRE)-touch$(SUFFIX) \
 				$(LC_PRE)-wconvert$(SUFFIX)
 
+GBE_PRE		=	./dist/gbe/$(PREFIX)-gbe
+GBE 	   	= 	$(GBE_PRE)-gc$(SUFFIX) \
+				$(GBE_PRE)-gl$(SUFFIX)
+
 DEVPAC_PRE	=	./dist/devpac/$(PREFIX)-devpac
 DEVPAC   	= 	$(DEVPAC_PRE)-clink$(SUFFIX) \
 				$(DEVPAC_PRE)-gen$(SUFFIX) \
 				$(DEVPAC_PRE)-crsplit$(SUFFIX) \
 				$(DEVPAC_PRE)-strip$(SUFFIX) 
 
-all:		$(PC) $(LC) $(DEVPAC)
+all:		$(PC) $(LC) $(GBE) $(DEVPAC)
 
 
 $(PC_PRE)-pcc$(SUFFIX):
@@ -108,6 +112,10 @@ $(LC_PRE)-touch$(SUFFIX):
 $(LC_PRE)-wconvert$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/lc/bin/WCONVERT.TTP" NAME=$@
 
+$(GBE_PRE)-gc$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/gbe/libs/gbe_68k.lib/gc_68k.prg" NAME=$@
+$(GBE_PRE)-gl$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/gbe/libs/gbe_68k.lib/gl_68k.prg" NAME=$@
 
 $(DEVPAC_PRE)-clink$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/devpac/bin/clink.ttp" NAME=$@
