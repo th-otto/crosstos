@@ -698,7 +698,7 @@ void gemdos_init(uint8_t* ram, uint32_t ramsize)
     for(; i < sizeof(handles) / sizeof(handles[0]); i++)
     {
         handles[i].fd    = 0;
-        handles[i].fname = "";
+        handles[i].fname = NULL;
         handles[i].term.state = not_term;
         handles[i].reader = reader_file;
         handles[i].writer = writer_file;  
