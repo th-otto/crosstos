@@ -1,28 +1,35 @@
 #!/usr/bin/python
 
-import sys, getopt
+import sys, getopt, string
+import collections
 
-def inbrackets(line):
 
-	opt = line[line.find("[")+1:line.find("]")]
+def inbrackets(line, open, close):
+
+	opt = line[line.find(open)+1:line.find(close)]
 
 	return opt
 
 def project(fname, libpath, includes):
 
-	name   = "main.tos"
+	name   = ""
 
-	cflags = ""
-	aflags = ""
-	lflags = ""
-
-	objs   = ""
-	src    = list();
-	libs   = list();
-
-	clean  = ""
+	pobjs  = list()
+	objs   = list()
+	libs   = list()
 
 	modules = 0
+	deps   = ""
+	parms  = ""
+
+	items = collections.OrderedDict()
+	item  = ""
+
+	items['.C'] = dict({ 'Dependencies': "", 'Parameters': ""})
+	items['.S'] = dict({ 'Dependencies': "", 'Parameters': ""})
+	items['.L'] = dict({ 'Dependencies': "", 'Parameters': ""})
+
+	mode = 0
 
 	with open(fname) as f:
 
@@ -30,48 +37,72 @@ def project(fname, libpath, includes):
 
 		for line in content:
 
-			line = line.strip().upper();
+			# Strip whitespaces, convert to upper case, and remove comments
+			line = line.strip().upper().split(";", 1)[0]
 
-			if(line == ""):
-				dummy = 0
-			elif(line.startswith(";")):
-				dummy = 0
-			elif(line.startswith("*")):
+			if(line.startswith("*")):
 				if(modules == 0):
-					name   = "main.tos"
+					line = "output.tos"
 				else:
-					src.append("main.c")
-
+					line = "default.c"
 			elif(line.startswith("=")):
+				name = item
 				modules = 1
-			elif(line.startswith(".C")):
-				cflags = cflags + inbrackets(line).strip() + " "
-			elif(line.startswith(".S")):
-				aflags = aflags + inbrackets(line).strip() + " "
-			elif(line.startswith(".L")):
-				lflags = lflags + inbrackets(line).strip() + " "
-			else:
-				items = line.upper().split()
 
-				if(items[0].endswith(".LIB")):
-					libs.append(items[0])
-				elif(items[0].endswith(".O")):
-					objs = objs + libpath + items[0] + " "
-				elif(items[0].endswith(".C")):
-					src.append(items[0])
-				else:
-					if(modules == 0):
-						name = items[0]
+			if(line != ""):
+				if(mode == 0):
+					items[item] = dict({ 'Dependencies': map(str.strip, deps.split(",")),
+										 'Parameters': map(str.strip, parms.split()) } )
+
+					item  = line.upper().split()[0]
+					deps  = ""
+					parms = ""
+
+				if("(" in line):
+					if(")" in line):
+						deps = inbrackets(line, "(", ")")
 					else:
-						print "Unknown syntax: " + line
+						deps = line.split("(", 1)[1]
+						mode = 1
+				elif(")" in line):
+					deps = deps + line.split(")", 1)[0]
+					mode = 0
+				elif(mode == 1):
+					deps = deps + line
 
-		for file in src:
-			objs = objs + file[:-1] + "o "
+				if("[" in line):
+					if("]" in line):
+						parms = inbrackets(line, "[", "]")
+					else:
+						parms = line.split("[", 1)[1]
+						mode = 2
+				elif("]" in line):
+					parms = parms + line.split("]", 1)[0]
+					mode = 0
+				elif(mode == 2):
+					parms = parms + line
 
-		clean = clean + name + " "
 
-		for file in src:
-			clean = clean + file[:-1] + "o "
+		if(mode == 0):
+			items[item] = dict({ 'Dependencies': map(str.strip, deps.split(",")),
+								 'Parameters': map(str.strip, parms.split()) } )
+
+
+		cflags = ' '.join(items['.C']['Parameters'])
+		lflags = ' '.join(items['.L']['Parameters'])
+		aflags = ' '.join(items['.S']['Parameters'])
+
+		del items['.C']
+		del items['.L']
+		del items['.S']
+
+		for key, value in items.iteritems():
+			if(key.endswith(".O")):
+				pobjs.append(key)
+			elif(key.endswith(".C") or key.endswith(".S")):
+				objs.append(key[:-1] + "o")
+			elif(key.endswith(".LIB")):
+				libs.append(key)
 
 		print "NAME     = " + name
 		print "TMPOBJ   = __tmpXYZ.o"
@@ -83,26 +114,44 @@ def project(fname, libpath, includes):
 		print "CFLAGS   = " + cflags
 		print "AFLAGS   = " + aflags
 		print "LFLAGS   = " + lflags
-		print "OBJECTS  = " + objs
+		print "PREBUILT = " + ' '.join(pobjs)
+		print "OBJECTS  = " + ' '.join(objs)
+		print "LIBS     = " + ' '.join(libs)
+		print "LIBPATH  = " + libpath
 		print ""
 		print "all: $(NAME)"
 		print ""
-		print "$(NAME): $(OBJECTS)"
+		print "# Linking is performed incrementally to avoid generating a huge command line"
+		print "$(NAME): $(PREBUILT) $(OBJECTS) $(LIBS)"
 
-		print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(OBJECTS)" 
+		# print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ)" 
+
+		for obj in pobjs:
+			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) $(LIBPATH)" + obj 
+
+		for obj in objs:
+			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) " + obj
 
 		for lib in libs:
-			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) " + libpath + lib 
+			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) $(LIBPATH)" + lib 
 
 		print "\t$(LD) $(LDFLAGS) -O=$@ $(TMPOBJ)" 
 		print "\trm -f $(TMPOBJ)"
+		print ""
 
-		print ""
-		print ".c.o:"
-		print "\t$(CC) $(CFLAGS) -O$@ $<"
-		print ""
+		for key, value in items.iteritems():
+			if(key.endswith(".C")):
+				print key + ": " + ' '.join(value['Dependencies'])
+				print "\t$(CC) $(CFLAGS) " + ' '.join(value['Parameters'])+ " -O$@ $<"
+				print ""
+			elif(key.endswith(".S")):
+				print key + ": " + ' '.join(value['Dependencies'])
+				print "\t$(AS) $(AFLAGS) " + ' '.join(value['Parameters'])+ " -O$@ $<"
+				print ""
+
 		print "clean:"
-		print "\t rm -f " + clean + " $(TMPOBJ)"
+		print "\t rm -f $(OBJECTS) $(NAME) $(TMPOBJ)"
+		print ""
 
 def main(argv):
   
