@@ -100,7 +100,7 @@ def project(fname, libpath, includes):
 			if(key.endswith(".O")):
 				pobjs.append(key)
 			elif(key.endswith(".C") or key.endswith(".S")):
-				objs.append(key[:-1] + "o")
+				objs.append(key[:-1] + "O")
 			elif(key.endswith(".LIB")):
 				libs.append(key)
 
@@ -114,17 +114,17 @@ def project(fname, libpath, includes):
 		print "CFLAGS   = " + cflags
 		print "AFLAGS   = " + aflags
 		print "LFLAGS   = " + lflags
-		print "PREBUILT = " + ' '.join(pobjs)
+		print "LIBPATH  = " + libpath
+		print "PREBUILT = " + "$(LIBPATH)".join(pobjs)
 		print "OBJECTS  = " + ' '.join(objs)
 		print "LIBS     = " + ' '.join(libs)
-		print "LIBPATH  = " + libpath
 		print ""
 		print "all: $(NAME)"
 		print ""
 		print "# Linking is performed incrementally to avoid generating a huge command line"
 		print "$(NAME): $(PREBUILT) $(OBJECTS) $(LIBS)"
 
-		# print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ)" 
+		print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ)" # open temporary file
 
 		for obj in pobjs:
 			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) $(LIBPATH)" + obj 
@@ -135,18 +135,18 @@ def project(fname, libpath, includes):
 		for lib in libs:
 			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) $(LIBPATH)" + lib 
 
-		print "\t$(LD) $(LDFLAGS) -O=$@ $(TMPOBJ)" 
+		print "\t$(LD) $(LDFLAGS) -O=$@ $(TMPOBJ)" # remove temporary file
 		print "\trm -f $(TMPOBJ)"
 		print ""
 
 		for key, value in items.iteritems():
 			if(key.endswith(".C")):
-				print key + ": " + ' '.join(value['Dependencies'])
-				print "\t$(CC) $(CFLAGS) " + ' '.join(value['Parameters'])+ " -O$@ $<"
+				print key[:-1] + "O" + ": " + ' '.join(value['Dependencies'])
+				print "\t$(CC) $(CFLAGS) " + ' '.join(value['Parameters'])+ " -O$@ " + key
 				print ""
 			elif(key.endswith(".S")):
-				print key + ": " + ' '.join(value['Dependencies'])
-				print "\t$(AS) $(AFLAGS) " + ' '.join(value['Parameters'])+ " -O$@ $<"
+				print key[:-1] + "O" + ": " + ' '.join(value['Dependencies'])
+				print "\t$(AS) $(AFLAGS) " + ' '.join(value['Parameters'])+ " -O$@ " + key
 				print ""
 
 		print "clean:"

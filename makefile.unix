@@ -56,6 +56,10 @@ DEVPAC   	= 	$(DEVPAC_PRE)-clink$(SUFFIX) \
 
 all:		$(PC) $(LC) $(GBE) $(MMMCLI) $(DEVPAC)
 
+			cp ./abin/purec/vdi.bgi ./dist/purec/
+			cp ./abin/purec/include/*.H ./dist/purec/include
+			cp ./abin/purec/lib/*.{LIB,O,S} ./dist/purec/lib
+			cp ./abin/purec/lib/README ./dist/purec/lib
 
 $(PC_PRE)-pcc$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/purec/PCC.TTP" NAME=$@
@@ -136,3 +140,9 @@ $(DEVPAC_PRE)-strip$(SUFFIX):
 clean:
 		rm -f $(PC) $(LC) $(GBE) $(MMMCLI) $(DEVPAC)
 		make -f build.single clean
+
+		rm -f ./dist/purec/vdi.bgi
+		rm -f ./dist/purec/include/*.H
+		rm -f ./dist/purec/lib/*.{LIB,O,S}
+		rm -f ./dist/purec/lib/README
+
