@@ -9,6 +9,14 @@ export LDFLAGS   	=
 PREFIX      = 	m68k-atari-tos
 SUFFIX      =   
 
+TC_PRE      =   ./dist/tc/$(PREFIX)-tc
+TC    	 	= 	$(TC_PRE)-tcc$(SUFFIX) \
+				$(TC_PRE)-cpp$(SUFFIX) \
+				$(TC_PRE)-bgiobj$(SUFFIX) \
+				$(TC_PRE)-dispobj$(SUFFIX) \
+				$(TC_PRE)-tlink$(SUFFIX)
+
+
 PC_PRE      =   ./dist/purec/$(PREFIX)-purec
 PC    	 	= 	$(PC_PRE)-pcc$(SUFFIX) \
 				$(PC_PRE)-cpp$(SUFFIX) \
@@ -54,12 +62,27 @@ DEVPAC   	= 	$(DEVPAC_PRE)-clink$(SUFFIX) \
 				$(DEVPAC_PRE)-crsplit$(SUFFIX) \
 				$(DEVPAC_PRE)-strip$(SUFFIX) 
 
-all:		$(PC) $(LC) $(GBE) $(MMMCLI) $(DEVPAC)
+all:		$(TC) $(PC) $(LC) $(GBE) $(MMMCLI) $(DEVPAC)
+
+			cp ./abin/tc/include/*.H ./dist/tc/include
+			cp ./abin/tc/lib/*.{LIB,O,S} ./dist/tc/lib
 
 			cp ./abin/purec/vdi.bgi ./dist/purec/
 			cp ./abin/purec/include/*.H ./dist/purec/include
 			cp ./abin/purec/lib/*.{LIB,O,S} ./dist/purec/lib
 			cp ./abin/purec/lib/README ./dist/purec/lib
+
+$(TC_PRE)-tcc$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/tc/TCC.TTP" NAME=$@
+$(TC_PRE)-cpp$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/tc/CPP.TTP" NAME=$@
+$(TC_PRE)-bgiobj$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/tc/BGIOBJ.TTP" NAME=$@
+$(TC_PRE)-dispobj$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/tc/DISPOBJ.TTP" NAME=$@
+$(TC_PRE)-tlink$(SUFFIX):
+			make -f build.single TOS_BINARY="./abin/tc/TLINK.TTP" NAME=$@
+
 
 $(PC_PRE)-pcc$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/purec/PCC.TTP" NAME=$@
@@ -138,11 +161,15 @@ $(DEVPAC_PRE)-strip$(SUFFIX):
 
 # Remove all build files
 clean:
-		rm -f $(PC) $(LC) $(GBE) $(MMMCLI) $(DEVPAC)
+		rm -f $(TC) $(PC) $(LC) $(GBE) $(MMMCLI) $(DEVPAC)
 		make -f build.single clean
 
 		rm -f ./dist/purec/vdi.bgi
 		rm -f ./dist/purec/include/*.H
 		rm -f ./dist/purec/lib/*.{LIB,O,S}
 		rm -f ./dist/purec/lib/README
+
+		rm -f ./dist/tc/include/*.H
+		rm -f ./dist/tc/lib/*.{LIB,O,S}
+		rm -f ./dist/tc/lib/README
 

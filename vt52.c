@@ -81,7 +81,7 @@ int vt52_out(char c, file_t* dev)
                 case 'c':
                 case 'Y':
                 {
-                    dev->term.state == extended;
+                    dev->term.state = extended;
                 }
                     break;
 
@@ -103,7 +103,7 @@ int vt52_out(char c, file_t* dev)
             {
                 case 'b': fprintf(dev->fd, "\033[%dm", 30 + (c & 7)); break; /* Set FG */
                 case 'c': fprintf(dev->fd, "\033[%dm", 40 + (c & 7)); break; /* Set BG */
-                case 'Y': dev->term.state == set_xy; break;
+                case 'Y': dev->term.state = set_xy; break;
                 default:
                 {
                 }
@@ -116,7 +116,7 @@ int vt52_out(char c, file_t* dev)
 
         case set_xy:
         {
-            dev->term.state == normal;
+            dev->term.state = normal;
         }
             break;
     }

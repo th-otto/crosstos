@@ -54,7 +54,7 @@ def project(fname, libpath, includes):
 					items[item] = dict({ 'Dependencies': map(str.strip, deps.split(",")),
 										 'Parameters': map(str.strip, parms.split()) } )
 
-					item  = line.upper().split()[0]
+					item  = line.upper().split()[0].replace('\\', '/')
 					deps  = ""
 					parms = ""
 
@@ -97,8 +97,9 @@ def project(fname, libpath, includes):
 		del items['.S']
 
 		for key, value in items.iteritems():
+
 			if(key.endswith(".O")):
-				pobjs.append(key)
+				pobjs.append(libpath + key)
 			elif(key.endswith(".C") or key.endswith(".S")):
 				objs.append(key[:-1] + "O")
 			elif(key.endswith(".LIB")):
@@ -115,7 +116,7 @@ def project(fname, libpath, includes):
 		print "AFLAGS   = " + aflags
 		print "LFLAGS   = " + lflags
 		print "LIBPATH  = " + libpath
-		print "PREBUILT = " + "$(LIBPATH)".join(pobjs)
+		print "PREBUILT = " + ' '.join(pobjs)
 		print "OBJECTS  = " + ' '.join(objs)
 		print "LIBS     = " + ' '.join(libs)
 		print ""
@@ -127,7 +128,7 @@ def project(fname, libpath, includes):
 		print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ)" # open temporary file
 
 		for obj in pobjs:
-			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) $(LIBPATH)" + obj 
+			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) " + obj 
 
 		for obj in objs:
 			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) " + obj

@@ -136,7 +136,7 @@ int32_t Fopen(char* fname, int16_t mode)
         }
     }
 
-    printf("Fopen(%s, %02x) = %d\n", fname, mode, retval);
+   // printf("Fopen(%s, %02x) = %d\n", fname, mode, retval);
 
     path_to_tos(fname);
 
@@ -201,7 +201,7 @@ int16_t Fattrib (char* fname, int16_t wflag, int16_t attr )
 {
     path_from_tos(fname);
 
-    printf("Fattrib(\"%s\", %04x, %04x)\r\n", fname, wflag, attr);
+  //  printf("Fattrib(\"%s\", %04x, %04x)\r\n", fname, wflag, attr);
 
     path_to_tos(fname);
 
