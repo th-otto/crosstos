@@ -99,20 +99,20 @@ def project(fname, libpath, includes):
 		for key, value in items.iteritems():
 
 			if(key.endswith(".O")):
-				pobjs.append(libpath + key)
+				pobjs.append("$(LIBPATH)" + key)
 			elif(key.endswith(".C") or key.endswith(".S")):
 				objs.append(key[:-1] + "O")
 			elif(key.endswith(".LIB")):
-				libs.append(key)
+				libs.append("$(LIBPATH)" + key)
 
 		print "NAME     = " + name
-		print "TMPOBJ   = __tmpXYZ.o"
+		print "TMP      = __tmpXYZ.txt"
 		print "INCLUDES = " + includes
-		print "CC       = ./m68k-atari-tos-purec-pcc"
-		print "PP       = ./m68k-atari-tos-purec-cpp"
-		print "AS       = ./m68k-atari-tos-purec-pasm"
-		print "LD       = ./m68k-atari-tos-purec-plink"
-		print "CFLAGS   = " + cflags
+		print "CC       = ./m68k-atari-tos-pc-pcc"
+		print "PP       = ./m68k-atari-tos-pc-cpp"
+		print "AS       = ./m68k-atari-tos-pc-pasm"
+		print "LD       = ./m68k-atari-tos-pc-plink"
+		print "CFLAGS   = " + cflags + " $(INCLUDES)"
 		print "AFLAGS   = " + aflags
 		print "LFLAGS   = " + lflags
 		print "LIBPATH  = " + libpath
@@ -122,22 +122,11 @@ def project(fname, libpath, includes):
 		print ""
 		print "all: $(NAME)"
 		print ""
-		print "# Linking is performed incrementally to avoid generating a huge command line"
-		print "$(NAME): $(PREBUILT) $(OBJECTS) $(LIBS)"
-
-		print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ)" # open temporary file
-
-		for obj in pobjs:
-			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) " + obj 
-
-		for obj in objs:
-			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) " + obj
-
-		for lib in libs:
-			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) $(LIBPATH)" + lib 
-
-		print "\t$(LD) $(LDFLAGS) -O=$@ $(TMPOBJ)" # remove temporary file
-		print "\trm -f $(TMPOBJ)"
+		print "$(NAME): $(PREBUILT) $(OBJECTS)"
+		print "\t@echo $(PREBUILT) $(OBJECTS) $(LIBS) >$(TMP)"
+		print "\t$(LD) $(LDFLAGS) -C=$(TMP) -O=$@"
+		print "\t@rm -f $(TMP)"
+		print "\t@echo Done."
 		print ""
 
 		for key, value in items.iteritems():
@@ -169,7 +158,7 @@ def main(argv):
 			sys.exit()
 
 	for arg in args:
-		project(arg, "./LIB/", "-I./INCLUDES")
+		project(arg, "./LIB/", "-I./INCLUDE")
 
 if __name__== "__main__":
 	main(sys.argv[1:])

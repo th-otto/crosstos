@@ -106,7 +106,7 @@ def project(fname, libpath, includes):
 				libs.append("$(LIBPATH)" + key)
 
 		print "NAME     = " + name
-		print "TMPOBJ   = __tmpXYZ.o"
+		print "TMP      = __tmpXYZ.txt"
 		print "INCLUDES = " + includes
 		print "CC       = ./m68k-atari-tos-tc-tcc"
 		print "PP       = ./m68k-atari-tos-tc-cpp"
@@ -122,22 +122,11 @@ def project(fname, libpath, includes):
 		print ""
 		print "all: $(NAME)"
 		print ""
-		print "# Linking is performed incrementally to avoid generating a huge command line"
 		print "$(NAME): $(PREBUILT) $(OBJECTS)"
-
-		print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ)" # open temporary file
-
-		for obj in pobjs:
-			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) " + obj 
-
-		for obj in objs:
-			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) " + obj
-
-		for lib in libs:
-			print "\t$(LD) $(LDFLAGS) -J -O=$(TMPOBJ) $(TMPOBJ) $(LIBPATH)" + lib 
-
-		print "\t$(LD) $(LDFLAGS) -O=$@ $(TMPOBJ)" # remove temporary file
-		print "\trm -f $(TMPOBJ)"
+		print "\t@echo $(PREBUILT) $(OBJECTS) $(LIBS) >$(TMP)"
+		print "\t$(LD) $(LDFLAGS) -C=$(TMP) -O=$@"
+		print "\t@rm -f $(TMP)"
+		print "\t@echo Done."
 		print ""
 
 		for key, value in items.iteritems():

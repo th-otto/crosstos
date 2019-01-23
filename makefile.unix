@@ -17,7 +17,7 @@ TC    	 	= 	$(TC_PRE)-tcc$(SUFFIX) \
 				$(TC_PRE)-tlink$(SUFFIX)
 
 
-PC_PRE      =   ./dist/purec/$(PREFIX)-purec
+PC_PRE      =   ./dist/purec/$(PREFIX)-pc
 PC    	 	= 	$(PC_PRE)-pcc$(SUFFIX) \
 				$(PC_PRE)-cpp$(SUFFIX) \
 				$(PC_PRE)-pasm$(SUFFIX) \
