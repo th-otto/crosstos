@@ -1,4 +1,4 @@
-DEFINES			= -DBINARY=\"$(TOS_BINARY)\"
+DEFINES			= 
 
 INCLUDES		= -I. -I./mushashi -I./tinyalloc
 
@@ -26,11 +26,20 @@ OBJECTS			+= $(BINARY)
 # Build all
 all:		$(NAME)
 
+incbin:		incbin.c
+			gcc -o incbin incbin.c
+
+binary.c:	incbin
+			./incbin $(TOS_BINARY) >binary.c
+
+binary.o:	binary.c
+			gcc -c binary.c
+
 # Generate target
-$(NAME):	$(OBJECTS)
+$(NAME):	$(OBJECTS) incbin
 			$(LD) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
 			$(STRIP) $(NAME)
-			rm -f $(BINARY)
+			rm -f binary.c binary.o
 
 # Generic compilation target
 .c.o:
@@ -41,4 +50,4 @@ $(NAME):	$(OBJECTS)
 
 # Remove all build files
 clean:
-			rm -f $(OBJECTS)
+			rm -f $(OBJECTS) binary.c incbin

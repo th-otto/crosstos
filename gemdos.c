@@ -11,6 +11,7 @@
 #include "cpu.h"
 #include "gemdos.h"
 #include "tinyalloc.h"
+#include "vt52.h"
 
 #include <time.h>
 #include <sys/time.h>
@@ -303,7 +304,7 @@ uint32_t Mshrink(uint32_t block, uint32_t bytes)
 
 void Mfree(uint32_t block)
 {
-    ta_free(block);
+    ta_free((void*)((intptr_t)block));
 }
 
 uint32_t Malloc(int32_t bytes)
@@ -316,7 +317,7 @@ uint32_t Malloc(int32_t bytes)
     }
     else
     {
-        retval = ta_alloc(bytes);
+        retval = (uint32_t)((intptr_t)ta_alloc(bytes));
     }
 
   //  printf("Malloc(%08x) = 0x%08x\r\n", bytes, retval);
@@ -397,7 +398,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
         case 0x0009: /* Cconws() */
         {
-            char* buf = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
+            char* buf = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
 
             retval = GEMDOS_E_OK;
 
@@ -414,7 +415,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
         case 0x000a: /* Cconrs() */
         {
-            char* buf = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
+            char* buf = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
 
           //  getline(buf,128,stdin);
 
@@ -480,7 +481,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
         case 0x3c: /* Fcreate() */
         {
-            char*    fname = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
+            char*    fname = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
             int16_t  attr  = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 6);
 
             retval = Fcreate(fname, attr);
@@ -489,7 +490,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
         case 0x3d: /* Fopen() */
         {
-            char*    fname = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
+            char*    fname = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
             int16_t  mode  = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 6);
 
             retval = Fopen(fname, mode);
@@ -508,7 +509,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
         {
             int16_t  handle = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2);
             int32_t  count  = READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 4);
-            char*    buf    = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 8)];
+            char*    buf    = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 8)];
 
             retval = Fread(handle, count, buf);
         }
@@ -518,7 +519,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
         {
             int16_t  handle = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2);
             int32_t  count  = READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 4);
-            char*    buf    = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 8)];
+            char*    buf    = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 8)];
 
             retval = Fwrite(handle, count, buf);
         }
@@ -526,7 +527,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
         case 0x0043: /* int16_t Fattrib ( const int8_t *filename, int16_t wflag, int16_t attrib );*/ 
         {
-            char*    fname  = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
+            char*    fname  = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
             int16_t  wflag  = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 6);
             int16_t  attrib = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 8);
 
@@ -536,7 +537,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
         case 0x0041: /* int16_t Fdelete ( const int8_t *fname ) */
         {
-            char*    fname  = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
+            char*    fname  = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
 
             retval = Fdelete(fname);
         }
@@ -569,7 +570,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
         case 0x0047: /* int16_t Dgetpath ( int8_t *path, int16_t driveno ); */
         {
-            char*    buf    = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
+            char*    buf    = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
             int16_t  drive  = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 6);
 
             (void)drive;
@@ -616,7 +617,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
         case 0x004e: /* int32_t Fsfirst ( const int8_t *filename, int16_t attr ) */
         {
-            char*   fname = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
+            char*   fname = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
             int16_t attr  = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 6);
 
             path_from_tos(fname);
@@ -640,8 +641,8 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
         case 0x0056: /* int32_t Frename ( const int8_t *oldname, const int8_t *newname ) */
         {
             uint16_t reserved  = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2);
-            char*    fname     = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 4)];
-            char*    new_fname = &rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 8)];
+            char*    fname     = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 4)];
+            char*    new_fname = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 8)];
 
             (void)reserved;
 

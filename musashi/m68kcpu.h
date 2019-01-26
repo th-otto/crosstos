@@ -1804,6 +1804,7 @@ INLINE void m68ki_exception_1010(void)
 	m68ki_stack_frame_0000(REG_PPC, sr, EXCEPTION_1010);
 	m68ki_jump_vector(EXCEPTION_1010);
 #else
+	(void)sr;
 	cpu_callback_trap(0x10);
 #endif
 	/* Use up some clock cycles and undo the instruction's cycles */

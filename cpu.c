@@ -71,7 +71,7 @@ uint32_t cpu_init(int argc, char **argv, char **envp)
     ram[p_hitpa++] = '\0';
     ram[p_hitpa++] = '\0';
 
-    printf("ENV: %s\r\n", &ram[p_env]);
+   // printf("ENV: %s\r\n", &ram[p_env]);
 
     WRITE_LONG(ram, pd + OFF_P_LOWTPA,  p_lowtpa);
     WRITE_LONG(ram, pd + OFF_P_HITPA,   p_hitpa);
@@ -89,7 +89,7 @@ uint32_t cpu_init(int argc, char **argv, char **envp)
     return 0;
 }
 
-bool cpu_load(uint8_t* bin, uint32_t tpasize, uint8_t* p_cmdlin, uint32_t parent_pd)
+bool cpu_load(uint8_t* bin, uint32_t tpasize, const char * p_cmdlin, uint32_t parent_pd)
 {
     pd  = Malloc(tpasize);
 
@@ -159,7 +159,7 @@ bool cpu_load(uint8_t* bin, uint32_t tpasize, uint8_t* p_cmdlin, uint32_t parent
 
     memset(&ram[pd + OFF_P_RESRVD1 ], 0, 80);
     ram[pd + OFF_P_CMDLIN] = strlen(p_cmdlin);
-    strcpy(&ram[pd + OFF_P_CMDLIN + 1], p_cmdlin);
+    strcpy((char *)&ram[pd + OFF_P_CMDLIN + 1], p_cmdlin);
 
     memcpy(&ram[p_tbase], bin + 28, p_tlen + p_dlen);
 

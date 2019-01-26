@@ -31,7 +31,7 @@ typedef struct file_s
 
     char* fname;
 
-    struct $
+    struct
     {
     	enum
 	    {

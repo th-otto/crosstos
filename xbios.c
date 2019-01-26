@@ -66,7 +66,7 @@ uint32_t xbios_dispatch(uint16_t opcode, uint32_t pd)
 
             m68k_set_reg(M68K_REG_PC, call);
 
-            printf("Supexec(%08x)\r\n", call);
+           // printf("Supexec(%08x)\r\n", call);
             return true;
         }
             break;

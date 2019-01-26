@@ -10,7 +10,7 @@ int main(int argc, char **argv, char **envp)
 {
     bool done = false;
 
-    uint8_t cmd[126] = "";
+    char cmd[126] = "";
 /*
     for (char **env = envp; *env != 0; env++)
     {
@@ -45,7 +45,7 @@ int main(int argc, char **argv, char **envp)
 
     uint32_t sys_pd = cpu_init(argc, argv, envp);
 
-    if(cpu_load(binary, 500000, cmd, sys_pd))
+    if(cpu_load(binary, 500000, (const char*)cmd, sys_pd))
     {
         do
         {
