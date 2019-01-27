@@ -64,13 +64,12 @@ DEVPAC   	= 	$(DEVPAC_PRE)-clink$(SUFFIX) \
 
 all:		$(TC) $(PC) $(LC) $(GBE) $(MMMCLI) $(DEVPAC)
 
-			cp ./abin/tc/include/*.H ./dist/tc/include
-			cp ./abin/tc/lib/*.{LIB,O,S} ./dist/tc/lib
+			cp ./abin/tc/include/* ./dist/tc/include
+			cp ./abin/tc/lib/* ./dist/tc/lib
 
 			cp ./abin/purec/vdi.bgi ./dist/purec/
-			cp ./abin/purec/include/*.H ./dist/purec/include
-			cp ./abin/purec/lib/*.{LIB,O,S} ./dist/purec/lib
-			cp ./abin/purec/lib/README ./dist/purec/lib
+			cp ./abin/purec/include/* ./dist/purec/include
+			cp ./abin/purec/lib/* ./dist/purec/lib
 
 $(TC_PRE)-tcc$(SUFFIX):
 			make -f build.single TOS_BINARY="./abin/tc/TCC.TTP" NAME=$@

@@ -104,17 +104,19 @@ int32_t Fopen(char* fname, int16_t mode)
     int32_t retval = -1;
     int i;
 
-    path_from_tos(fname);
+ //   printf("Fopen %s...\n", fname);
 
     for(i = 0; i < sizeof(handles) / sizeof(handles[0]); i++)
     {
         if(!handles[i].fd)
         {
+            char* f = path_open(fname, true);
+
             switch(mode & 3)
             {
-                case 0: handles[i].fd = fopen(fname, "rb"); break;
-                case 1: handles[i].fd = fopen(fname, "rb+"); break;
-                case 2: handles[i].fd = fopen(fname, "rb+"); break;
+                case 0: handles[i].fd = fopen(f, "rb"); break;
+                case 1: handles[i].fd = fopen(f, "rb+"); break;
+                case 2: handles[i].fd = fopen(f, "rb+"); break;
                 default:
                 {
 
@@ -124,22 +126,18 @@ int32_t Fopen(char* fname, int16_t mode)
 
             if(handles[i].fd)
             {
-                handles[i].fname = malloc(strlen(fname) + 1);
-
-                if(handles[i].fname)
-                {
-                    strcpy(handles[i].fname, fname);
-                }
+                handles[i].fname = f;
 
                 retval = i;
-                break;
             }
+            else
+            {
+                path_close(f);
+            }
+            
+            break;
         }
     }
-
-   // printf("Fopen(%s, %02x) = %d\n", fname, mode, retval);
-
-    path_to_tos(fname);
 
     return retval;
 }
@@ -155,7 +153,7 @@ int16_t Fclose(int16_t handle)
             if(handles[handle].fname)
             {
      //           printf("Fclose(%d) (%s)\r\n", handle, handles[handle].fname);
-                free(handles[handle].fname);
+                path_close(handles[handle].fname);
             }
  
             handles[handle].fd    = NULL;
@@ -178,21 +176,22 @@ int16_t Fcreate (char* fname, int16_t attr)
 {
     int32_t retval = GEMDOS_E_EACCDN;
 
-    FILE* fd;
+    char* f = path_open(fname, false);
 
   //  printf("Fcreate(\"%s\", %04x)\r\n", fname, attr);
 
-    path_from_tos(fname);
-
-    fd = fopen(fname,"wb+");
-
-    path_to_tos(fname);
-
-    if(fd)
+    if(f)
     {
-        fclose(fd);
+        FILE* fd = fopen(f,"wb+");
 
-        retval = Fopen(fname, 2);
+        if(fd)
+        {
+            fclose(fd);
+
+            retval = Fopen(f, 2);
+        }
+
+        path_close(f);
     }
 
     return retval;
@@ -200,11 +199,15 @@ int16_t Fcreate (char* fname, int16_t attr)
 
 int16_t Fattrib (char* fname, int16_t wflag, int16_t attr )
 {
-    path_from_tos(fname);
+    char* f = path_open(fname, true);
 
-  //  printf("Fattrib(\"%s\", %04x, %04x)\r\n", fname, wflag, attr);
+    //  printf("Fattrib(\"%s\", %04x, %04x)\r\n", fname, wflag, attr);
 
-    path_to_tos(fname);
+    if(f)
+    {
+
+        path_close(f);
+    }
 
     return GEMDOS_EFILNF;
 }
@@ -212,18 +215,23 @@ int16_t Fattrib (char* fname, int16_t wflag, int16_t attr )
 int32_t Frename(char *fname, char *new_fname)
 {
     int32_t retval = GEMDOS_E_OK;
+
+    char* f1 = path_open(fname, true);
+    char* f2 = path_open(new_fname, true);
+
   //  printf("Frename (%s, %s)\r\n", fname, new_fname);
 
-    path_from_tos(fname);
-    path_from_tos(new_fname);
-
-    if(rename(fname, new_fname))
+    if(f1 && f2)
     {
-        retval = GEMDOS_EFILNF;
-    }
+        if(rename(f1, f2))
+        {
+            retval = GEMDOS_EFILNF;
+        }
 
-    path_to_tos(fname);
-    path_to_tos(new_fname);
+        path_close(f1);
+        path_close(f2);
+
+    }
 
     return retval; 
 }
@@ -233,16 +241,19 @@ int16_t Fdelete (char *fname )
     int32_t retval = GEMDOS_E_OK;
  //   printf("Fdelete (%s)\r\n", fname);
 
-    path_from_tos(fname);
+    char* f = path_open(fname, true);
 
-    if(remove(fname))
+    if(f)
     {
-        retval = GEMDOS_EFILNF;
+        if(remove(f))
+        {
+            retval = GEMDOS_EFILNF;
+        }
+
+        path_close(f);
     }
 
-    path_to_tos(fname);
-
-    return GEMDOS_E_OK; 
+    return retval; 
 }
 
 int32_t Fread(int16_t handle, int32_t count, void *buf)
@@ -620,11 +631,14 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
             char*   fname = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2)];
             int16_t attr  = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 6);
 
-            path_from_tos(fname);
+            char*   f = path_open(fname, true);
+
+            if(f)
+            {
+                path_close(f);
+            }
 
             printf("Fsfirst(\"%s\", 0x%04x)\r\n", fname, attr);
-
-            path_to_tos(fname);
 
             retval = GEMDOS_EFILNF;
         }
