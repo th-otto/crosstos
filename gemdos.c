@@ -336,6 +336,13 @@ uint32_t Malloc(int32_t bytes)
     return retval;
 }
 
+uint32_t Pexec(int16_t mode, char* name, char* cmd, char* env)
+{
+    printf("Pexec (%d, %s, %s, %s) (not supported, ignored)\n", mode, name, cmd, env);
+
+    return 0;
+}
+
 
 uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 {
@@ -347,8 +354,6 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
     {
         case 0x0000: /* Pterm0() */
         {
-            printf("\n");
-
             exit(0);
         }
             break;
@@ -436,6 +441,11 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
         }
             break;
 
+        case 0x000b: /* Cconis() */
+        {
+            retval = GEMDOS_E_OK;
+        }
+            break;
 
         case 0x0019: /* Dgetdrv() */
         {
@@ -616,11 +626,21 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
         }
             break;
 
+        case 0x004b: /* int32_t Pexec ( uint16_t mode, ... ) */
+        {
+            int16_t mode = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2);
+
+            char*   name = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 4)];
+            char*   cmd  = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 8)];
+            char*   env  = (char*)&rambase[READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 12)];
+
+            retval = Pexec(mode, name, cmd, env);
+        }
+            break;
+
         case 0x004c: /* Pterm() */
         {
             int16_t status = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2);
-
-            printf("\n");
 
             exit(status);
         }   

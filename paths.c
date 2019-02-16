@@ -9,110 +9,93 @@
 
 char* cwd = "./";
 
-char* search(char* path)
+static bool skip_slashes(char** in, char** out)
 {
-    bool   match = false;
-    struct dirent *de;
+    char*  str = *in;
 
-    char*  search_path = malloc(4000);
+    bool found = false;
 
-    char*  cmp = path;
-
-    if((path[0] == '/') || (path[0] == '\\'))
+    while((*str == '/') || (*str == '\\'))
     {
-        strcpy(search_path, "/");
-    }
-    else
-    {
-        strcpy(search_path, cwd);
+        str++;
+
+        found = true;
     }
 
-    while(*cmp)
+    if(out)
     {
-        DIR* dir = opendir (search_path);
-
-        while((*cmp == '/') || (*cmp == '\\'))
-        {
-            cmp++;
-        }
-
-        if(dir)
-        {
-            while ((de = readdir (dir)))
-            {
-                char c1, c2;
-                int  i = 0;
-
-                match = true;
-
-//                printf("COMPARE %s, %s\n", cmp, de->d_name);
-                
-                for(;;)
-                {
-                    c1 = toupper(cmp[i]);
-                    c2 = toupper(de->d_name[i]);
-
-                    if(!c2 && ((c1 == '/') || (c1 == '\\')))
-                    {
-                        break;
-                    }
-
-                    if(!c1 && !c2)
-                    {
-                        break;
-                    }
-
-                    if(c1 != c2)
-                    {
-                        match = false;
-                        break;
-                    }
-
-                    i++;
- 
-                }
-
-                if(match)
-                {
-                    strcat(search_path, "/");
-                    strcat(search_path, de->d_name);
-                    cmp += i;
-                    break;
-                }
-
-                /*  compare file name in directory entry with your name  */
-            }
-
-            closedir(dir);
-
-            if(!match)
-            {
-                break;
-            }
-        }
-
-        if(!match)
-        {
-            break;
-        }
+        *out = str;
     }
 
-    if(!match)
-    {
-        if(search_path)
-        {
-            free(search_path);
-
-            search_path = NULL;
-        }
-    }
-
-    return search_path;
+    return found;
 }
 
-char* path_cwd(void)
+static int count_chars(char** in, char** out)
 {
-    return cwd;
+    char* str    = *in;
+
+    int   count = 0;
+
+    while(*str && (*str != '/') && (*str != '\\'))
+    {
+        str++;
+        count++;
+    }
+
+    if(out)
+    {
+        *out = str;
+    }
+
+    return count;
+}
+
+static bool path_find_item(char* path, char* item, int count)
+{
+    bool match = false;
+    struct dirent *de;
+
+    int i;
+
+    DIR* dir = opendir (path);
+
+    if(dir)
+    {
+        while(!match && (de = readdir (dir)))
+        {
+            match = true;
+
+            char c1, c2;
+            for(i = 0; i < count; i++)
+            {
+                c1 = toupper(de->d_name[i]);
+                c2 = toupper(item[i]);
+
+                if(c1 != c2)
+                {   
+                    match = false;
+                    break;
+                }
+                else
+                {
+                    if(!c1)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        if(match)
+        {
+            strcat(path, "/");
+            strcat(path, de->d_name);
+        }
+
+        closedir(dir);
+    }
+
+    return match;
 }
 
 void path_close(char* path)
@@ -125,66 +108,75 @@ void path_close(char* path)
 
 char* path_open(char* fname, bool exist)
 {
-    char* result = NULL;
+    char* search_path = malloc(4000);
 
-    if(exist)
+    if(search_path)
     {
-        result = search(fname);
+        /*
+         * Check for leading slashes to determine
+         * starting point (relative cwd or absolute path)
+         */
 
-    }
-    else
-    {
-        char* search_path = NULL;
+        //printf("search %s, %d\n", fname, exist);
 
-        if(strstr("/", fname) || strstr("\\", fname))
+        if(skip_slashes(&fname, &fname))
         {
-            char* s = strdup(fname);
+            /*
+             * Slashes found.
+             *  - this is an absolute path
+             */
 
-            if(s)
-            {
-                int r = strlen(fname);
-
-                if(r)
-                {
-                    r--;
-
-                    while(r >= 0)
-                    {
-                        if((s[r] == '\\') || (s[r] == '/'))
-                        {
-                            s[r] = '\0';
-                            fname = &s[r+1];
-                            break;
-                        }
-
-                        r--;
-                    }
-                }
-            }
-
-            search_path = search(s);
-            free(s);
-
-            if(search_path)
-            {
-                result = malloc(4000);
-                
-                if(result)
-                {
-                    strcpy(result, search_path);
-                    strcat(result, "/");
-                    strcat(result, fname);
-
-                    free(search_path);
-                }
-            }
-
+            strcpy(search_path, "/");
         }
         else
         {
-            result = strdup(fname);
+            strcpy(search_path, cwd);
         }
+
+        char* fnext = fname;
+
+        do
+        {
+            char* fend;
+
+            /*
+             * Count number of chars until slash/end
+             */
+
+            int count = count_chars(&fnext, &fend);
+
+            /* item now at <fnext>, <count> chars long */
+            if(path_find_item(search_path, fnext, count)) // also adds actual name to path
+            {
+            //    printf("fend %s fnext %s\n", fend, fnext);
+
+                /* Proceed to next item */
+                skip_slashes(&fend, &fnext);
+
+            //    printf("fend %s fnext %s\n", fend, fnext);
+            }
+            else
+            {
+            //    printf("fend %s fnext %s exist %d\n", fend, fnext, exist);
+ 
+                if(*fend || exist)
+                {
+                    free(search_path);
+                    search_path = NULL;
+                }
+                else
+                {
+                    strcat(search_path, "/");
+                    strcat(search_path, fnext);
+                }
+ 
+                break;
+            }
+        }
+        while(*fnext);
+
+    //    printf("found %s\n", search_path);
     }
 
-    return result;
+    return search_path;
 }

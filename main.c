@@ -43,6 +43,8 @@ int main(int argc, char **argv, char **envp)
 
     cmd[i] = '\0';
 
+    printf("Command line %s\n", cmd);
+
     uint32_t sys_pd = cpu_init(argc, argv, envp);
 
     if(cpu_load(binary, 500000, (const char*)cmd, sys_pd))
