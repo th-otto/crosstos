@@ -109,6 +109,7 @@ void path_close(char* path)
 char* path_open(char* fname, bool exist)
 {
     char* search_path = malloc(4000);
+    char* root_path;
 
     if(search_path)
     {
@@ -126,7 +127,10 @@ char* path_open(char* fname, bool exist)
              *  - this is an absolute path
              */
 
-            strcpy(search_path, "/");
+            if (root_path = getenv("TOS_ROOT_PATH"))
+                strcpy(search_path, root_path);
+            else
+                strcpy(search_path, "/");
         }
         else
         {
