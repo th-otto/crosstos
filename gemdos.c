@@ -350,6 +350,9 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
     // printf("gemdos %02x\n", opcode);
 
+    if (opcode >= 0x100) /* MiNT calls: not supported, but ignored */
+        return retval;
+
     switch(opcode)
     {
         case 0x0000: /* Pterm0() */
@@ -702,14 +705,6 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
                 WRITE_WORD(rambase, tptr + 0, 0x0000); /* time */
                 WRITE_WORD(rambase, tptr + 2, 0x0000); /* date */
             }
-        }
-            break;
-
-        case 0x0119: /* Pdomain() */
-        case 0x012c: /* Fxattre() */
-        case 0x0154: /* Ssystem() */
-        {
-            /* ignored */
         }
             break;
 
