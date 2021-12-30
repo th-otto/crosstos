@@ -257,8 +257,8 @@ unsigned int cpu_read_long(unsigned int address)
 #if defined(_MSC_VER) || defined(WIN32)
             LARGE_INTEGER t;
             QueryPerformanceCounter(&t);
-            uint32_t ticks200 = (uint32_t)(((double)(t.QuadPart / performancecounter_frequency.QuadPart)/200.0)*(double)(2^32));
-            
+            uint32_t ticks200 = (uint32_t)(((double)t.QuadPart / (double)performancecounter_frequency.QuadPart)*200.0);
+            WRITE_LONG(ram, address, ticks200);
 #else
             struct timespec ts;
             clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
