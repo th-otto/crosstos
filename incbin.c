@@ -16,7 +16,7 @@ int main(int argc, char **argv, char **envp)
 
             printf("#include <stdint.h>\n\n");
             printf("uint8_t binary[] = \n");
-            printf("{\r\t");
+            printf("{\t");
 
             for(;;)
             {
