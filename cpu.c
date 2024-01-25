@@ -360,7 +360,32 @@ void cpu_callback_trap(uint32_t vector)
 
         case 0x22:
         {
-            printf("Ignoring AES/VDI call\n");
+            uint32_t d0, d1, control;
+
+            d0 = m68k_get_reg(NULL, M68K_REG_D0);
+            switch (d0 & 0xffff)
+            {
+            case 0x73:
+                d1 = m68k_get_reg(NULL, M68K_REG_D1);
+                control = READ_LONG(ram, d1);
+                printf("Ignoring VDI call %d\n", READ_WORD(ram, control + 0));
+                break;
+            case 0xc8:
+                d1 = m68k_get_reg(NULL, M68K_REG_D1);
+                control = READ_LONG(ram, d1);
+                printf("Ignoring AES call %d\n", READ_WORD(ram, control + 0));
+                break;
+            case 0xc9:
+                printf("Ignoring AES call _appl_yield\n");
+                break;
+            case 0x0:
+                printf("Ignoring AES call exit\n");
+                break;
+            default:
+                d1 = m68k_get_reg(NULL, M68K_REG_D1);
+                printf("Ignoring GEM call d0=%x d1=%x\n", d0, d1);
+                break;
+            }
         }
             break;
 
