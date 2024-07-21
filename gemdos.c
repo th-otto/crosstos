@@ -193,7 +193,13 @@ int16_t Fcreate (char* fname, int16_t attr)
         {
             fclose(fd);
 
-            retval = Fopen(f, 2);
+            /* Steve: I think we need to pass the original name to Fopen()
+               since that re-resolves the path name, using path_open()
+               again.
+               Passing "frame" would transform the already-transformed
+               name, which can lead to malformed paths.
+            */
+            retval = Fopen(fname, 2);
         }
 
         path_close(f);
