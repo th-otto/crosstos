@@ -148,7 +148,12 @@ int16_t Fclose(int16_t handle)
     {
         if(handles[handle].term.state == not_term)
         {
-            fclose(handles[handle].fd);
+            /* Protect against double Fclose() call
+               (encountered in Lattice C invocations) */
+            if (handles[handle].fd)
+            {
+                fclose(handles[handle].fd);
+            }
 
             if(handles[handle].fname)
             {
