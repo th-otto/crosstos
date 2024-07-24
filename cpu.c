@@ -27,7 +27,7 @@ uint32_t cpu_init(int argc, char **argv, char **envp)
     pd = 0x00008000; /* System basepage */
 
     m68k_init();
-    m68k_set_cpu_type(M68K_CPU_TYPE_68000);
+    m68k_set_cpu_type(M68K_CPU_TYPE_68020);
     m68k_pulse_reset();
 
     xbios_init(ram, sizeof(ram));
