@@ -99,7 +99,7 @@ void bios_init(uint8_t* ram, uint32_t ramsize)
     cjar += 8;
 
     WRITE_LONG(rambase, cjar + 0, C__FPU);
-    WRITE_LONG(rambase, cjar + 4, 0);
+    WRITE_LONG(rambase, cjar + 4, 3);
     cjar += 8;
 
     WRITE_LONG(rambase, cjar + 0, 0);
