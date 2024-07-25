@@ -18,3 +18,10 @@ Thumbs.db
 *.bak
 .~*
 *.orig
+
+# Make output
+*.o
+m68kmake
+m68kops.?
+sim
+tags
