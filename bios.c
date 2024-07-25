@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include "cpu.h"
 
+#define C__MCH 0x5F4D4348L     /* Machine Type */
+#define C__CPU 0x5F435055L     /* Central Processor Unit Type */
+#define C__FPU 0x5F465055L     /* Floating Point Unit Type */
+
 static uint8_t* rambase = NULL;
 
 uint32_t bios_dispatch(uint16_t opcode, uint32_t pd)
@@ -81,5 +85,24 @@ uint32_t bios_dispatch(uint16_t opcode, uint32_t pd)
 
 void bios_init(uint8_t* ram, uint32_t ramsize)
 {
+    uintptr_t cjar = 0x1000UL;
 	rambase = ram;
+
+    WRITE_LONG(rambase, 0x5A0UL, cjar);
+
+    WRITE_LONG(rambase, cjar + 0, C__MCH);
+    WRITE_LONG(rambase, cjar + 4, 0x20000);
+    cjar += 8;
+
+    WRITE_LONG(rambase, cjar + 0, C__CPU);
+    WRITE_LONG(rambase, cjar + 4, 20);
+    cjar += 8;
+
+    WRITE_LONG(rambase, cjar + 0, C__FPU);
+    WRITE_LONG(rambase, cjar + 4, 0);
+    cjar += 8;
+
+    WRITE_LONG(rambase, cjar + 0, 0);
+    WRITE_LONG(rambase, cjar + 4, 0);
+    cjar += 8;
 }
