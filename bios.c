@@ -95,7 +95,7 @@ void bios_init(uint8_t* ram, uint32_t ramsize)
     cjar += 8;
 
     WRITE_LONG(rambase, cjar + 0, C__CPU);
-    WRITE_LONG(rambase, cjar + 4, 20);
+    WRITE_LONG(rambase, cjar + 4, 30);
     cjar += 8;
 
     WRITE_LONG(rambase, cjar + 0, C__FPU);
