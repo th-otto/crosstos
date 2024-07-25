@@ -31,7 +31,7 @@ int main(int argc, char **argv, char **envp)
             cmd[i++] = *aptr++;
         }
 
-        if(i < (sizeof(cmd) - 1))
+        if(i < (sizeof(cmd) - 1) && (arg < (argc - 1)))
         {
             cmd[i++] = ' ';
         }
