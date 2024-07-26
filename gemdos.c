@@ -347,6 +347,12 @@ uint32_t Malloc(int32_t bytes)
     return retval;
 }
 
+uint32_t Mxalloc(int32_t bytes, int16_t mode)
+{
+    (void)mode;
+    return Malloc(bytes);
+}
+
 uint32_t Pexec(int16_t mode, char* name, char* cmd, char* env)
 {
     printf("Pexec (%d, %s, %s, %s) (not supported, ignored)\n", mode, name, cmd, env);
@@ -588,6 +594,15 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
         }
             break;
 
+        case 0x0044: /* Mxalloc() */
+        {
+            int32_t  count  = READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2);
+            int16_t  mode   = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 6);
+
+            retval = Mxalloc(count, mode); 
+        }
+            break;
+
         case 0x0045: /* Fdup() */
         {
             printf("Ignoring Fdup() \n");
@@ -672,7 +687,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
                 path_close(f);
             }
 
-            printf("Fsfirst(\"%s\", 0x%04x)\r\n", fname, attr);
+            printf("Fsfirst(\"%s\", 0x%04x) (%s)\r\n", fname, attr,f);
 
             retval = GEMDOS_EFILNF;
         }
