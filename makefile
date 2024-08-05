@@ -16,7 +16,7 @@ else
 endif
 
 CFLAGS =		-Wall -pedantic -std=gnu99 -O3
-LIBS =
+LIBS = -lm
 LDFLAGS = 
 
 ifeq ($(UNAME), Windows)
