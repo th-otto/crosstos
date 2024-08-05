@@ -22,10 +22,8 @@ static uint32_t pd;
 LARGE_INTEGER performancecounter_frequency;
 #endif
 
-uint32_t cpu_init(int argc, char **argv, char **envp)
+uint32_t cpu_init(void)
 {
-    pd = 0x00008000; /* System basepage */
-
     m68k_init();
     m68k_set_cpu_type(M68K_CPU_TYPE_68030);
     m68k_pulse_reset();
@@ -34,12 +32,14 @@ uint32_t cpu_init(int argc, char **argv, char **envp)
     bios_init(ram, sizeof(ram));
     gemdos_init(ram, sizeof(ram));
 
+    pd = Malloc(512); /* System basepage */
+
 #if defined(_MSC_VER) || defined(WIN32)
     QueryPerformanceFrequency(&performancecounter_frequency);
 #endif
 
     uint32_t p_lowtpa  = pd;                    /* Start address of the TPA            */
-    uint32_t p_hitpa   = p_lowtpa + 256;        /* First byte after the end of the TPA */
+    uint32_t p_hitpa   = p_lowtpa + 512;        /* First byte after the end of the TPA */
     uint32_t p_tbase   = 0;                     /* Start address of the program code   */
     uint32_t p_tlen    = 0;                     /* Length of the program code          */
     uint32_t p_dbase   = 0;                     /* Start address of the DATA segment   */
@@ -54,25 +54,6 @@ uint32_t cpu_init(int argc, char **argv, char **envp)
     uint32_t p_resrvd0 = 0;                     /* Reserved                            */
     uint32_t p_env     = p_hitpa;               /* Address of the environment string   */
 
-    int arg;
-
-    for(arg = 0; arg < argc; arg++)
-    {
-        char* chr = arg ? argv[arg] : "ARGV=binary";
-
-        while(*chr)
-        {
-            ram[p_hitpa++] = *chr++;
-        }
-
-        ram[p_hitpa++] = ' ';
-    }
-
-    ram[p_hitpa++] = '\0';
-    ram[p_hitpa++] = '\0';
-
-   // printf("ENV: %s\r\n", &ram[p_env]);
-
     WRITE_LONG(ram, pd + OFF_P_LOWTPA,  p_lowtpa);
     WRITE_LONG(ram, pd + OFF_P_HITPA,   p_hitpa);
     WRITE_LONG(ram, pd + OFF_P_TBASE,   p_tbase);
@@ -86,17 +67,47 @@ uint32_t cpu_init(int argc, char **argv, char **envp)
     WRITE_LONG(ram, pd + OFF_P_RESRVD0, p_resrvd0);
     WRITE_LONG(ram, pd + OFF_P_ENV,     p_env);
 
-    return 0;
+    return pd;
 }
 
-bool cpu_load(uint8_t* bin, uint32_t tpasize, const char * p_cmdlin, uint32_t parent_pd)
+bool cpu_load(uint8_t* bin, int argc, char **argv, uint32_t parent_pd)
 {
-    pd  = Malloc(tpasize);
+    char cmd[128];
+	int use_argv = 0;
+    int arg;
+	int i;
+	size_t envsize = 0;
+	uint32_t tpasize;
 
-    if(!pd)
+    envsize = 30;
+    i = 0;
+    for (arg = 1; arg < argc; arg++)
     {
-        return false;
-    }
+        char* aptr = argv[arg];
+
+        envsize += strlen(aptr) + 1;
+        while (*aptr)
+        {
+        	if (i < 126)
+	            cmd[i++] = *aptr;
+	        else
+	        	use_argv = 1;
+	        aptr++;
+        }
+
+        if (arg < (argc - 1))
+        {
+	        if (i < 126)
+	        {
+	            cmd[i++] = ' ';
+	        }
+	        else
+	        {
+	        	use_argv = 1;
+	        }
+	    }
+	}
+    cmd[i] = '\0';
 
     uint16_t ph_branch      = READ_WORD(bin,  0);   /* Branch to start of the program  */
                                                     /* (must be 0x601a!)               */
@@ -112,17 +123,29 @@ bool cpu_load(uint8_t* bin, uint32_t tpasize, const char * p_cmdlin, uint32_t pa
     (void)ph_prgflags;
     (void)ph_res1;
 
- /*   printf("ph_branch    = %08x\n", ph_branch);
+#if 0
+	printf("ph_branch    = %08x\n", ph_branch);
     printf("ph_tlen      = %08x\n", ph_tlen);
     printf("ph_dlen      = %08x\n", ph_dlen);
     printf("ph_blen      = %08x\n", ph_blen);
     printf("ph_slen      = %08x\n", ph_slen);
     printf("ph_res1      = %08x\n", ph_res1);
     printf("ph_prgflags  = %08x\n", ph_prgflags);
-    printf("ph_absflag   = %08x\n", ph_absflag); */
- 
+    printf("ph_absflag   = %08x\n", ph_absflag);
+#endif
   
     if(ph_branch != 0x601a)
+    {
+        return false;
+    }
+
+    envsize = (envsize + 255) & ~255;
+    tpasize = ph_tlen + ph_dlen + ph_blen + 256;
+    tpasize = (tpasize + 255) & ~255;
+
+    pd  = Malloc(tpasize + envsize);
+
+    if(!pd)
     {
         return false;
     }
@@ -155,15 +178,43 @@ bool cpu_load(uint8_t* bin, uint32_t tpasize, const char * p_cmdlin, uint32_t pa
     WRITE_LONG(ram, pd + OFF_P_DTA,     p_dta);
     WRITE_LONG(ram, pd + OFF_P_PARENT,  p_parent);
     WRITE_LONG(ram, pd + OFF_P_RESRVD0, p_resrvd0);
-    WRITE_LONG(ram, pd + OFF_P_ENV,     p_env);
 
     memset(&ram[pd + OFF_P_RESRVD1 ], 0, 80);
-    ram[pd + OFF_P_CMDLIN] = strlen(p_cmdlin);
-    strcpy((char *)&ram[pd + OFF_P_CMDLIN + 1], p_cmdlin);
+    ram[pd + OFF_P_CMDLIN] = i;
+    strcpy((char *)&ram[pd + OFF_P_CMDLIN + 1], cmd);
+
+    if (use_argv)
+    {
+        uint32_t p;
+
+        ram[pd + OFF_P_CMDLIN] = 127;
+
+        p_env = p_hitpa;
+        p = p_env;
+        memcpy(&ram[p_env], "HOME=root\0ARGV=\0binary", 23);
+        p += 23;
+        for (arg = 1; arg < argc; arg++)
+        {
+            char* chr = argv[arg];
+
+            while(*chr)
+            {
+                ram[p++] = *chr++;
+            }
+
+            ram[p++] = '\0';
+        }
+
+        ram[p++] = '\0';
+        ram[p++] = '\0';
+    }
+
+    WRITE_LONG(ram, pd + OFF_P_ENV, p_env);
 
     memcpy(&ram[p_tbase], bin + 28, p_tlen + p_dlen);
 
- /*   printf("p_lowtpa = %08x\n", p_lowtpa);
+#if 0
+	printf("p_lowtpa = %08x\n", p_lowtpa);
     printf("p_hitpa  = %08x\n", p_hitpa);
     printf("p_tbase  = %08x\n", p_tbase);
     printf("p_tlen   = %08x\n", p_tlen);
@@ -174,8 +225,9 @@ bool cpu_load(uint8_t* bin, uint32_t tpasize, const char * p_cmdlin, uint32_t pa
     printf("p_dta    = %08x\n", p_dta);
     printf("p_parent = %08x\n", p_parent);
     printf("p_resrvd0= %08x\n", p_resrvd0);
-    printf("p_env    = %08x\n", p_env);*/
-  
+    printf("p_env    = %08x\n", p_env);
+#endif
+
     if(!ph_absflag)
     {
         uint32_t fix = p_tbase;
@@ -187,7 +239,6 @@ bool cpu_load(uint8_t* bin, uint32_t tpasize, const char * p_cmdlin, uint32_t pa
         {
             fix += off;
 
-        //    printf("Relocating... (%08x = %08x + %08x)\r\n", fix, READ_LONG(ram, fix), p_tbase);
             WRITE_LONG(ram, fix, READ_LONG(ram, fix) + p_tbase);
  
             rel += 4;
@@ -203,7 +254,6 @@ bool cpu_load(uint8_t* bin, uint32_t tpasize, const char * p_cmdlin, uint32_t pa
 
                     fix += *rel;
 
-              //      printf("Relocating... (%08x = %08x + %08x)\r\n", fix, READ_LONG(ram, fix), p_tbase);
                     WRITE_LONG(ram, fix, READ_LONG(ram, fix) + p_tbase);
                 }
 

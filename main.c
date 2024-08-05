@@ -10,44 +10,9 @@ int main(int argc, char **argv, char **envp)
 {
     bool done = false;
 
-    char cmd[126] = "";
-/*
-    for (char **env = envp; *env != 0; env++)
-    {
-        char *thisEnv = *env;
-        printf("%s\n", thisEnv);    
-    }
-*/
-    int arg;
+    uint32_t sys_pd = cpu_init();
 
-    int i = 0;
-
-    for(arg = 1; arg < argc; arg++)
-    {
-        char* aptr = argv[arg];
-
-        while(*aptr && i < (sizeof(cmd) - 1))
-        {
-            cmd[i++] = *aptr++;
-        }
-
-        if(i < (sizeof(cmd) - 1) && (arg < (argc - 1)))
-        {
-            cmd[i++] = ' ';
-        }
-        else
-        {
-            break;
-        }
-    }
-
-    cmd[i] = '\0';
-
-    printf("Command line %s\n", cmd);
-
-    uint32_t sys_pd = cpu_init(argc, argv, envp);
-
-    if(cpu_load(binary, 500000, (const char*)cmd, sys_pd))
+    if(cpu_load(binary, argc, argv, sys_pd))
     {
         do
         {
