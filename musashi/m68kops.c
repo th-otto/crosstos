@@ -36706,7 +36706,7 @@ static const opcode_handler_struct m68k_opcode_handler_table[] =
 void m68ki_build_opcode_table(void)
 {
 	const opcode_handler_struct *ostruct;
-	int cycle_cost;
+	/* int cycle_cost; */
 	int instr;
 	int i;
 	int j;

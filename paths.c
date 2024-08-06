@@ -7,8 +7,6 @@
 #include <ctype.h>
 #include "paths.h"
 
-char* cwd = "./";
-
 static bool skip_slashes(char** in, char** out)
 {
     char*  str = *in;
@@ -129,14 +127,14 @@ char* path_open(char* fname, bool exist)
              *  - this is an absolute path
              */
 
-            if (root_path = getenv("TOS_ROOT_PATH"))
+            if ((root_path = getenv("TOS_ROOT_PATH")) != NULL)
                 strcpy(search_path, root_path);
             else
                 strcpy(search_path, "/");
         }
         else
         {
-            strcpy(search_path, cwd);
+            strcpy(search_path, "./");
         }
 
         char* fnext = fname;
