@@ -20,18 +20,14 @@ LIBS = -lm
 LDFLAGS = 
 
 ifeq ($(UNAME), Windows)
-PREFIX = 		m68k-atari-tos-
 SUFFIX =   		.exe
-INCBIN = 		incbin.exe
-BUILDDIR=		dist
-ABIN = 			abin/
 else
-PREFIX = 		m68k-atari-tos-
 SUFFIX =   		
-INCBIN = 		./incbin
+endif
+PREFIX = 		m68k-atari-tos-
 BUILDDIR=		dist
 ABIN = 			abin/
-endif
+INCBIN = 		./incbin$(SUFFIX)
 
 #
 # Convert to lower case (kludgy, but afaik it's the only platform independent way to do this)
@@ -74,7 +70,7 @@ INCLUDES =		-I. -I./mushashi -I./tinyalloc
 # Misc. filename mangling macros
 targname =		$(firstword $(subst /, ,$1))
 filename =		$(call lc,$(PREFIX)$(call targname, $1)-$(notdir $(basename $1))$(SUFFIX))
-fullname =		$(BUILDDIR)/$(call targname,$1)/$(call filename,$1)
+fullname =		$(BUILDDIR)/$(call targname,$1)/bin/$(call filename,$1)
 
 bobject  =		$(addsuffix .o, bin-$(call targname, $1)-$(notdir $(basename $1)))
 bsource  =		$(addsuffix .c, bin-$(call targname, $1)-$(notdir $(basename $1)))
@@ -92,6 +88,7 @@ endef
 # Target definition (final binaries)
 define target_binary
 $(call fullname, $f) : $(call bobject,$f) $(OBJECTS)
+				-mkdir -p $(dir $(call fullname, $f))
 				$(LD) $(LDFLAGS) $(OBJECTS) $(call bobject,$f) $(LIBS) -o $(call fullname, $f)
 endef
 
@@ -112,9 +109,7 @@ $(INCBIN):	incbin.c
 
 # GTFO
 clean:
-				rm -f $(INCBIN) $(OBJECTS) \
-				$(foreach f, $(BINARIES), \
-				rm -f $(call bobject, $f); \
-				rm -f $(call bsource, $f); \
-				rm -f $(call fullname, $f); \
-				)
+				rm -f $(INCBIN) $(OBJECTS)
+				rm -f $(foreach f, $(BINARIES), $(call bobject, $f))
+				rm -f $(foreach f, $(BINARIES), $(call bsource, $f))
+				rm -f $(foreach f, $(BINARIES), $(call fullname, $f))
