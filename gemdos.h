@@ -8,6 +8,7 @@
 #define GEMDOS_E_OK 	(0)
 #define GEMDOS_EFILNF	(-33)
 #define GEMDOS_E_EACCDN (-36)
+#define GEMDOS_EBADF	(-37)
 
 /* Basepage (PD) offsets */
 #define OFF_P_LOWTPA  (0)
@@ -50,8 +51,8 @@ typedef struct file_s
 
 } file_t;
 
-extern void 	Mfree(uint32_t block);
-extern uint32_t Malloc(int32_t bytes);
+void 	Mfree(uint32_t block);
+uint32_t Malloc(int32_t bytes);
 extern uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd);
 extern void 	gemdos_init(uint8_t* ram, uint32_t ramsize);
 
