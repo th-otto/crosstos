@@ -28,6 +28,31 @@ static bool skip_slashes(char** in, char** out)
     return found;
 }
 
+static bool skip_rootdrive(char** in)
+{
+    char*  str = *in;
+
+    bool found = false;
+
+	int c = toupper((unsigned char)*str);
+	
+	if (c >= 'C' && c <= 'Z' && str[1] == ':')
+	{
+		str += 2;
+		found = true;
+	}
+    while((*str == '/') || (*str == '\\'))
+    {
+        str++;
+
+        found = true;
+    }
+
+    *in = str;
+
+    return found;
+}
+
 static int count_chars(char** in, char** out)
 {
     char* str    = *in;
@@ -120,7 +145,7 @@ char* path_open(char* fname, bool exist)
 
         //printf("search %s, %d\n", fname, exist);
 
-        if(skip_slashes(&fname, &fname))
+        if(skip_rootdrive(&fname))
         {
             /*
              * Slashes found.
@@ -134,7 +159,7 @@ char* path_open(char* fname, bool exist)
         }
         else
         {
-            strcpy(search_path, "./");
+            strcpy(search_path, ".");
         }
 
         char* fnext = fname;
