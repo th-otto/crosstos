@@ -106,11 +106,8 @@ static int32_t reader_term(int16_t handle, int32_t count, void *buf)
 
 static int32_t Fopen(char *fname, int16_t mode)
 {
-	int32_t retval = -1;
+	int32_t retval = GEMDOS_EFILNF;
 	int i;
-
-	if (trace_gemdos)
-		fprintf(stderr, "Fopen(\"%s\")\n", fname);
 
 	for (i = 0; i < sizeof(handles) / sizeof(handles[0]); i++)
 	{
@@ -147,6 +144,9 @@ static int32_t Fopen(char *fname, int16_t mode)
 		}
 	}
 
+	if (trace_gemdos)
+		fprintf(stderr, "Fopen(\"%s\", %d) = %d\n", fname, mode, retval);
+
 	return retval;
 }
 
@@ -177,7 +177,7 @@ static int16_t Fclose(int16_t handle)
 		return GEMDOS_E_OK;				/* E_OK */
 	}
 
-	return -1;							/* error */
+	return GEMDOS_EBADF;				/* error */
 }
 
 static int16_t Fforce(int16_t stdh, int16_t nonstdh)
@@ -192,9 +192,6 @@ static int16_t Fcreate(char *fname, int16_t attr)
 	int32_t retval = GEMDOS_E_EACCDN;
 
 	char *f = path_open(fname, false);
-
-	if (trace_gemdos)
-		fprintf(stderr, "Fcreate(\"%s\", 0x%04x)\n", fname, attr);
 
 	if (f)
 	{
@@ -215,6 +212,9 @@ static int16_t Fcreate(char *fname, int16_t attr)
 
 		path_close(f);
 	}
+
+	if (trace_gemdos)
+		fprintf(stderr, "Fcreate(\"%s\", 0x%04x) = %d\n", fname, attr, retval);
 
 	return retval;
 }
@@ -564,15 +564,29 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 		break;
 
 	case 0x002a:						/* Tgetdate() */
-		if (trace_gemdos)
-			fprintf(stderr, "Tgetdate()\n");
-		retval = GEMDOS_E_OK;			/* bogus */
+		{
+			time_t t;
+			struct tm tm;
+			
+			time(&t);
+			tm = *localtime(&t);
+			retval = (((tm.tm_year + 1900 - 1980) & 0x7f) << 9) | ((tm.tm_mon + 1) << 5) | (tm.tm_mday & 0x1f);
+			if (trace_gemdos)
+				fprintf(stderr, "Tgetdate() = 0x%04x (%04d/%02d/%02d)\n", retval, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+		}
 		break;
 
 	case 0x002c:						/* Tgettime() */
-		if (trace_gemdos)
-			fprintf(stderr, "Tgettime()\n");
-		retval = GEMDOS_E_OK;			/* bogus */
+		{
+			time_t t;
+			struct tm tm;
+			
+			time(&t);
+			tm = *localtime(&t);
+			retval = ((tm.tm_hour & 0x1f) << 11) | ((tm.tm_min & 0x3f) << 5) | ((tm.tm_sec & 0x3f) >> 1);
+			if (trace_gemdos)
+				fprintf(stderr, "Tgettime() = 0x%04x (%02d:%02d:%02d)\n", retval, tm.tm_hour, tm.tm_min, tm.tm_sec);
+		}
 		break;
 
 	case 0x002f:						/* DTA *Fgetdta ( void ); */
@@ -724,8 +738,8 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
 	case 0x004a:						/* Mshrink() */
 		{
-			uint32_t block = READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2);
-			uint32_t newsize = READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 6);
+			uint32_t block = READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 4);
+			uint32_t newsize = READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 8);
 
 			retval = Mshrink(block, newsize);
 		}
