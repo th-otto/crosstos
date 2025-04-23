@@ -390,6 +390,40 @@ void cpu_callback_pc_changed(uint32_t pc)
     
 }
 
+
+static void aes_dispatch(uint32_t aespb)
+{
+	uint32_t control = READ_LONG(ram, aespb);
+	uint32_t intout = READ_LONG(ram, aespb + 12);
+	uint16_t opcode = READ_WORD(ram, control + 0);
+
+	switch (opcode)
+	{
+	case 10:
+		/* appl_init: make it fail */
+		WRITE_WORD(ram, intout, -1);
+		break;
+	default:
+		fprintf(stderr, "Ignoring AES call %d\n", opcode);
+		break;
+	}
+}
+
+
+static void vdi_dispatch(uint32_t vdipb)
+{
+	uint32_t control = READ_LONG(ram, vdipb);
+	uint16_t opcode = READ_WORD(ram, control + 0);
+
+	switch (opcode)
+	{
+	default:
+        fprintf(stderr, "Ignoring VDI call %d\n", opcode);
+		break;
+	}
+}
+
+
 void cpu_callback_trap(uint32_t vector)
 {
     switch(vector)
@@ -410,20 +444,18 @@ void cpu_callback_trap(uint32_t vector)
 
         case 0x22:
         {
-            uint32_t d0, d1, control;
+            uint32_t d0, d1;
 
             d0 = m68k_get_reg(NULL, M68K_REG_D0);
             switch (d0 & 0xffff)
             {
             case 0x73:
                 d1 = m68k_get_reg(NULL, M68K_REG_D1);
-                control = READ_LONG(ram, d1);
-                printf("Ignoring VDI call %d\n", READ_WORD(ram, control + 0));
+                vdi_dispatch(d1);
                 break;
             case 0xc8:
                 d1 = m68k_get_reg(NULL, M68K_REG_D1);
-                control = READ_LONG(ram, d1);
-                printf("Ignoring AES call %d\n", READ_WORD(ram, control + 0));
+                aes_dispatch(d1);
                 break;
             case 0xc9:
                 printf("Ignoring AES call _appl_yield\n");
