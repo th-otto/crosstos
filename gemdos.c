@@ -60,6 +60,7 @@ uint8_t ta_base[0x1000 * 16];
 static uint8_t *rambase = NULL;
 
 static int trace_gemdos;
+static int trace_unsupported;
 
 #define printable_name(handle) handle >= 0 && handle < NUM_HANDLES ? handles[handle].fname : ""
 
@@ -113,31 +114,61 @@ static int32_t Fopen(char *fname, int16_t mode)
 	{
 		if (!handles[i].fd)
 		{
-			char *f = path_open(fname, true);
-
-			switch (mode & 3)
+			if (strcmp(fname, "CON:") == 0 || strcmp(fname, "con:") == 0)
 			{
-			case 0:
-				handles[i].fd = fopen(f, "rb");
-				break;
-			case 1:
-				handles[i].fd = fopen(f, "rb+");
-				break;
-			case 2:
-				handles[i].fd = fopen(f, "rb+");
-				break;
-			default:
-				break;
-			}
-
-			if (handles[i].fd)
+				handles[i].fd = stderr;
+				handles[i].fname = fname;
+				handles[i].term.state = normal;
+				handles[i].reader = reader_null;
+				handles[i].writer = writer_term;
+				retval = -1;
+			} else if (strcmp(fname, "AUX:") == 0 || strcmp(fname, "aux:") == 0)
 			{
-				handles[i].fname = f;
-
-				retval = i;
+				handles[i].fd = stderr;
+				handles[i].fname = fname;
+				handles[i].term.state = normal;
+				handles[i].reader = reader_null;
+				handles[i].writer = writer_term;
+				retval = -2;
+			} else if (strcmp(fname, "PRN:") == 0 || strcmp(fname, "prn:") == 0)
+			{
+				handles[i].fd = stderr;
+				handles[i].fname = fname;
+				handles[i].term.state = normal;
+				handles[i].reader = reader_null;
+				handles[i].writer = writer_term;
+				retval = -3;
 			} else
 			{
-				path_close(f);
+				char *f = path_open(fname, true);
+
+				switch (mode & 3)
+				{
+				case 0:
+					handles[i].fd = fopen(f, "rb");
+					break;
+				case 1:
+					handles[i].fd = fopen(f, "rb+");
+					break;
+				case 2:
+					handles[i].fd = fopen(f, "rb+");
+					break;
+				default:
+					break;
+				}
+
+				if (handles[i].fd)
+				{
+					handles[i].fname = f;
+					handles[i].term.state = not_term;
+					handles[i].reader = reader_file;
+					handles[i].writer = writer_file;
+
+					retval = i;
+				} else
+				{
+					path_close(f);
+				}
 			}
 
 			break;
@@ -160,16 +191,26 @@ static int16_t Fclose(int16_t handle)
 		{
 			/* Protect against double Fclose() call
 			   (encountered in Lattice C invocations) */
-			if (handles[handle].fd)
+			if (handles[handle].fd != stdin &&
+				handles[handle].fd != stdout &&
+				handles[handle].fd != stderr)
 			{
-				fclose(handles[handle].fd);
+				if (handles[handle].fd)
+				{
+					fclose(handles[handle].fd);
+					handles[handle].fd = NULL;
+				}
+
+				if (handles[handle].fname)
+				{
+					path_close(handles[handle].fname);
+					handles[handle].fname = NULL;
+				}
 			}
 
-			if (handles[handle].fname)
-			{
-				path_close(handles[handle].fname);
-			}
-
+		}
+		if (handle >= 4 && handle < NUM_HANDLES)
+		{
 			handles[handle].fd = NULL;
 			handles[handle].fname = NULL;
 		}
@@ -182,7 +223,7 @@ static int16_t Fclose(int16_t handle)
 
 static int16_t Fforce(int16_t stdh, int16_t nonstdh)
 {
-	if (trace_gemdos)
+	if (trace_gemdos || trace_unsupported)
 		fprintf(stderr, "Fforce(%d, %d) (not implemented)\n", stdh, nonstdh);
 	return GEMDOS_E_OK;
 }
@@ -223,13 +264,10 @@ static int16_t Fattrib(char *fname, int16_t wflag, int16_t attr)
 {
 	char *f = path_open(fname, true);
 
-	if (trace_gemdos)
-		fprintf(stderr, "Fattrib(\"%s\", %d, 0x%04x)\n", fname, wflag, attr);
+	if (trace_gemdos || trace_unsupported)
+		fprintf(stderr, "Fattrib(\"%s\", %d, 0x%04x) (%s)\n", fname, wflag, attr, f);
 
-	if (f)
-	{
-		path_close(f);
-	}
+	path_close(f);
 
 	return GEMDOS_EFILNF;
 }
@@ -250,10 +288,9 @@ static int32_t Frename(char *fname, char *new_fname)
 		{
 			retval = GEMDOS_EFILNF;
 		}
-
-		path_close(f1);
-		path_close(f2);
 	}
+	path_close(f1);
+	path_close(f2);
 
 	return retval;
 }
@@ -301,7 +338,13 @@ static int32_t Fread(int16_t handle, int32_t count, void *buf)
 
 static int32_t Fwrite(int16_t handle, int32_t count, void *buf)
 {
-
+	/*
+	 * Handles -1 .. -3 are valid GEMDOS handles
+	 */
+	if (handle == -1 || handle == -2)
+		handle = 2; /* -> stderr */
+	else if (handle == -3)
+		handle = 3; /* -> stdprn */
 	if (handle >= 0 && handle < NUM_HANDLES)
 	{
 		if (handles[handle].fd)
@@ -356,7 +399,7 @@ static int32_t Fseek(int32_t offset, int16_t handle, int16_t seekmode)
 
 static uint32_t Mshrink(uint32_t block, uint32_t newsize)
 {
-	if (trace_gemdos)
+	if (trace_gemdos || trace_unsupported)
 		fprintf(stderr, "Mshrink(0x%08x, 0x%08x) (not implemented)\n", block, newsize);
 	return GEMDOS_E_OK;
 }
@@ -395,7 +438,7 @@ static uint32_t Mxalloc(int32_t bytes, int16_t mode)
 
 static uint32_t Pexec(int16_t mode, char *name, char *cmd, char *env)
 {
-	if (trace_gemdos)
+	if (trace_gemdos || trace_unsupported)
 		fprintf(stderr, "Pexec(%d, %s, %s, %s) (not implemented)\n", mode, name, cmd, env);
 
 	return 0;
@@ -408,7 +451,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
 	if (opcode >= 0x100)				/* MiNT calls: not supported, but ignored */
 	{
-		if (trace_gemdos)
+		if (trace_gemdos || trace_unsupported)
 			fprintf(stderr, "MiNT GEMDOS call (0x%04x)\n", opcode);
 		return -32;
 	}
@@ -475,7 +518,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 		break;
 
 	case 0x0008:						/* Cnecin() */
-		if (trace_gemdos)
+		if (trace_gemdos || trace_unsupported)
 			fprintf(stderr, "Cnecin()\n");
 		retval = GEMDOS_E_OK;
 		break;
@@ -504,7 +547,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 			uint32_t addr = READ_LONG(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2);
 			char *buf = (char *) &rambase[addr];
 
-			if (trace_gemdos)
+			if (trace_gemdos || trace_unsupported)
 				fprintf(stderr, "Cconrs(0x%08x)\n", addr);
 			//  getline(buf,128,stdin);
 
@@ -689,7 +732,7 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 		{
 			int16_t stdh = READ_WORD(rambase, m68k_get_reg(NULL, M68K_REG_SP) + 2);
 
-			if (trace_gemdos)
+			if (trace_gemdos || trace_unsupported)
 				fprintf(stderr, "Fdup(%d) (not implemented)\n", stdh);
 			retval = GEMDOS_E_OK;
 		}
@@ -774,20 +817,17 @@ uint32_t gemdos_dispatch(uint16_t opcode, uint32_t pd)
 
 			char *f = path_open(fname, true);
 
-			if (f)
-			{
-				path_close(f);
-			}
-
-			if (trace_gemdos)
+			if (trace_gemdos || trace_unsupported)
 				fprintf(stderr, "Fsfirst(\"%s\", 0x%04x) (%s)\n", fname, attr, f);
+
+			path_close(f);
 
 			retval = GEMDOS_EFILNF;
 		}
 		break;
 
 	case 0x004f:						/* int16_t Fsnext ( void ) */
-		if (trace_gemdos)
+		if (trace_gemdos || trace_unsupported)
 			fprintf(stderr, "Fsnext()\n");
 		retval = GEMDOS_EFILNF;
 		break;
@@ -858,7 +898,7 @@ void gemdos_init(uint8_t *ram, uint32_t ramsize)
 
 	i++;
 	handles[i].fd = stderr;
-	handles[i].fname = "STDAUX:";
+	handles[i].fname = "STDERR:";
 	handles[i].term.state = normal;
 	handles[i].reader = reader_null;
 	handles[i].writer = writer_term;
